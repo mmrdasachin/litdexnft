@@ -13,9 +13,10 @@ import {
 } from "@/champions/hooks/useLitdex";
 import { useWallet } from "@/champions/hooks/useWallet";
 import { PASS_CARD_IMAGES } from "@/champions/lib/images";
-import litCoreIcon from "@/champions/assets/rarity-icons/LitCore.png.asset.json";
-import litGodIcon from "@/champions/assets/rarity-icons/LitGod.png.asset.json";
-import litShardIcon from "@/champions/assets/rarity-icons/LitShard.png.asset.json";
+import litCoreIconRaw from "@/champions/assets/rarity-icons/LitCore.png.asset.json";
+import litGodIconRaw from "@/champions/assets/rarity-icons/LitGod.png.asset.json";
+import litShardIconRaw from "@/champions/assets/rarity-icons/LitShard.png.asset.json";
+import { RARITY_ICON_URL } from "@/champions/lib/images";
 import {
   NFT_ADDRESS,
   discountLabel,
@@ -137,9 +138,9 @@ export function MintCard() {
     EPIC: "LitGod",
   };
   const RARITY_ICONS: Record<string, string> = {
-    COMMON: litShardIcon.url,
-    RARE: litCoreIcon.url,
-    EPIC: litGodIcon.url,
+    COMMON: RARITY_ICON_URL(litShardIconRaw),
+    RARE: RARITY_ICON_URL(litCoreIconRaw),
+    EPIC: RARITY_ICON_URL(litGodIconRaw),
   };
   const rarityLabel = (category: string) =>
     RARITY_DISPLAY[category.toUpperCase()] ?? category;

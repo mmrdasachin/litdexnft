@@ -1,22 +1,27 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { useWallet } from "@/champions/hooks/useWallet";
-import { BASE_MAINNET, LITVM, chainName, parseWalletError, type ChainConfig } from "@/champions/lib/litdex";
+import { BASE_MAINNET, chainName, parseWalletError } from "@/champions/lib/litdex";
 
+/**
+ * Not used by ChampionsDashboard (LitDEX's own header already shows the
+ * connected network) — kept for any standalone embed that still wants a
+ * manual "switch to Base" affordance.
+ */
 export function NetworkSwitcher({ tone = "light" }: { tone?: "light" | "dark" }) {
-  const { chainId, switchNetwork, address } = useWallet();
-  const [pending, setPending] = useState<number | null>(null);
+  const { chainId, correctNetwork, switchNetwork, address } = useWallet();
+  const [pending, setPending] = useState(false);
 
   if (!address) return null;
 
-  const handle = async (target: ChainConfig) => {
-    setPending(target.chainId);
+  const handle = async () => {
+    setPending(true);
     try {
-      await switchNetwork(target);
+      await switchNetwork();
     } catch (err) {
-      toast.error(parseWalletError(err, `Could not switch to ${target.chainName}.`));
+      toast.error(parseWalletError(err, `Could not switch to ${BASE_MAINNET.chainName}.`));
     } finally {
-      setPending(null);
+      setPending(false);
     }
   };
 
@@ -28,20 +33,14 @@ export function NetworkSwitcher({ tone = "light" }: { tone?: "light" | "dark" })
         Network: {chainName(chainId)}
         {chainId !== null && ` (${chainId})`}
       </span>
-      {[BASE_MAINNET, LITVM].map((c) => {
-        const active = chainId === c.chainId;
-        return (
-          <button
-            key={c.chainId}
-            type="button"
-            disabled={active || pending !== null}
-            onClick={() => void handle(c)}
-            className={`btn fx-9 btn-pill ${active ? "btn-lime" : "btn-blue"}`}
-          >
-            <span className="btn-label">{pending === c.chainId ? "Switching…" : `Switch to ${c.chainName}`}</span>
-          </button>
-        );
-      })}
+      <button
+        type="button"
+        disabled={correctNetwork || pending}
+        onClick={() => void handle()}
+        className={`btn fx-9 btn-pill ${correctNetwork ? "btn-lime" : "btn-blue"}`}
+      >
+        <span className="btn-label">{pending ? "Switching…" : `Switch to ${BASE_MAINNET.chainName}`}</span>
+      </button>
     </div>
   );
 }

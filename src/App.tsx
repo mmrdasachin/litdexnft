@@ -56,6 +56,7 @@ const NFT_SHOWCASE_VIDEO_WEBM = '/media/boardpass-desktopview.webm';
 type PageID = 'swap' | 'pool' | 'deploy' | 'points' | 'checkin' | 'nfts' | 'messenger' | 'quests' | 'games' | 'faucet' | 'hub' | 'chatui';
 import HubPage from './components/HubPage';
 import ChatUIPage from './components/ChatUIPage';
+import { ChampionsDashboard } from './champions/ChampionsDashboard';
 
 interface NavItemProps {
   icon: any;
@@ -688,12 +689,6 @@ const CheckinPage = () => {
 const NFTsPage = () => {
   const actions = [
     {
-      title: "Mint a Champion",
-      description: "Enter the LitDEX collection and mint your champion.",
-      label: "Mint a Champion",
-      href: "https://nft.test-hub.xyz/",
-    },
-    {
       title: "Trade Your Champions",
       description: "Explore and trade the LitDEX collection on OpenSea.",
       label: "Trade Your Champions",
@@ -723,7 +718,7 @@ const NFTsPage = () => {
           <source src={NFT_SHOWCASE_VIDEO_MP4} type="video/mp4" />
         </video>
 
-        <div className="mt-6 grid grid-cols-1 gap-6 md:mt-8 md:grid-cols-2 md:gap-8">
+        <div className="mt-6 grid grid-cols-1 gap-6 md:mt-8 md:gap-8">
           {actions.map((action) => (
             <section key={action.href} className="nft-action-panel">
               <h2 className="nft-action-heading">{action.title}</h2>
@@ -740,6 +735,10 @@ const NFTsPage = () => {
               </a>
             </section>
           ))}
+        </div>
+
+        <div className="mt-10 md:mt-14">
+          <ChampionsDashboard />
         </div>
       </div>
     </motion.div>

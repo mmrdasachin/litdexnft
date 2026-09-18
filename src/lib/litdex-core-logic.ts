@@ -24,6 +24,7 @@
 
 import { BrowserProvider, Contract, Interface, JsonRpcProvider, parseEther, parseUnits, formatEther } from "ethers";
 import { defineChain, parseAbi } from "viem";
+import { base as baseChain } from "viem/chains";
 import { http } from "wagmi";
 import { getDefaultConfig } from "@rainbow-me/rainbowkit";
 
@@ -405,13 +406,18 @@ async function getSignerContract(addr: string, abi: readonly unknown[]) {
 /* =====================================================================
  * SECTION 6 — WAGMI / RAINBOWKIT CONFIG
  * ===================================================================== */
+/** Base Mainnet — chain used by the Genesis Champions NFT collection. */
+export const BASE_MAINNET_RPC_URL = "https://mainnet.base.org";
+export { baseChain };
+
 export const wagmiConfig = getDefaultConfig({
   appName: "LitVM Explorer",
   projectId: "litvm-explorer-public",
-  chains: [litvmChain, sepoliaChain],
+  chains: [litvmChain, sepoliaChain, baseChain],
   transports: {
     [litvmChain.id]: http(RPC_URL),
     [sepoliaChain.id]: http(SEPOLIA_RPC_URL),
+    [baseChain.id]: http(BASE_MAINNET_RPC_URL),
   },
   ssr: false,
 });
