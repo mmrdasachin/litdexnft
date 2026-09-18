@@ -1,0 +1,69 @@
+diff --git a/src/champions/components/MintCard.tsx b/src/champions/components/MintCard.tsx
+index 7e8133f..2ae062f 100644
+--- a/src/champions/components/MintCard.tsx
++++ b/src/champions/components/MintCard.tsx
+@@ -1,4 +1,4 @@
+-import { useCallback, useEffect, useState } from "react";
++import { useCallback, useEffect, useRef, useState } from "react";
+ import { Minus, Plus } from "lucide-react";
+ import { Spinner } from "@/champions/components/ui/reui-spinner";
+ 
+@@ -126,10 +126,18 @@ export function MintCard() {
+     return () => clearInterval(t);
+   }, []);
+ 
+-  const started = mintStatus?.publicMintStarted ?? false;
+   const startsAt = (mintStatus?.publicMintStart ?? 0) * 1000;
++  /**
++   * publicMintStarted/whitelistActive come from the backend and only refresh
++   * on the query's 30s poll, while the countdown ticks locally every second.
++   * That left the button dead for up to 30s after the timer hit 00:00:00.
++   * Treat the window as open as soon as local time passes the start the
++   * backend itself gave us, and kick a refetch at the crossing.
++   */
++  const started =
++    (mintStatus?.publicMintStarted ?? false) || (startsAt > 0 && now >= startsAt);
+   const countdown =
+-    startsAt > 0 ? formatCountdown(startsAt - now) : null;
++    startsAt > 0 && now < startsAt ? formatCountdown(startsAt - now) : null;
+   const price = mintStatus ? BigInt(mintStatus.priceUSDT) : null;
+   const soldOut =
+     !!mintStatus && mintStatus.supplyCap > 0 && mintStatus.totalMinted >= mintStatus.supplyCap;
+@@ -141,7 +149,6 @@ export function MintCard() {
+       ? (mintStatus.totalMinted / mintStatus.supplyCap) * 100
+       : 0;
+ 
+-  const whitelistActive = voucherData?.whitelistActive !== false;
+   const whitelistStartRaw = Number(voucherData?.whitelistStart ?? 0);
+   const whitelistStartMs =
+     whitelistStartRaw > 0
+@@ -149,11 +156,28 @@ export function MintCard() {
+         ? whitelistStartRaw
+         : whitelistStartRaw * 1000
+       : 0;
++  const whitelistActive =
++    voucherData?.whitelistActive !== false ||
++    (whitelistStartMs > 0 && now >= whitelistStartMs);
+   const whitelistCountdown =
+-    !whitelistActive && whitelistStartMs > 0
++    !whitelistActive && whitelistStartMs > 0 && now < whitelistStartMs
+       ? formatCountdown(whitelistStartMs - now)
+       : null;
+ 
++  const crossedRef = useRef<{ wl: boolean; pub: boolean }>({ wl: false, pub: false });
++  useEffect(() => {
++    const wlOpen = whitelistStartMs > 0 && now >= whitelistStartMs;
++    const pubOpen = startsAt > 0 && now >= startsAt;
++    if (wlOpen && !crossedRef.current.wl) {
++      crossedRef.current.wl = true;
++      void refreshAll();
++    }
++    if (pubOpen && !crossedRef.current.pub) {
++      crossedRef.current.pub = true;
++      void refreshAll();
++    }
++  }, [now, whitelistStartMs, startsAt, refreshAll]);
++
+   const priorityVouchers = (voucherData?.vouchers ?? []).filter(
+     (v) => v.category.toUpperCase() === "PRIORITY",
+   );
