@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useRefreshAll } from "@/champions/hooks/useLitdex";
 import { useWallet } from "@/champions/hooks/useWallet";
 import { API_BASE, formatPoints, parseWalletError, pointsContract } from "@/champions/lib/litdex";
+import { readLDPoints } from "@/lib/litdex-core-logic";
 import { showError, showSuccess } from "@/lib/feedback";
 
 type ClaimStep = "idle" | "burning" | "signing" | "confirming";
@@ -19,18 +20,20 @@ export function PointsSection() {
   const [amount, setAmount] = useState("");
   const [step, setStep] = useState<ClaimStep>("idle");
 
+  /**
+   * Balance is read straight from the LD Points contract on LitVM — the same
+   * source the main site's Points dashboard uses — rather than the backend's
+   * old V7 balance endpoint. V7 earning is switched off and every V7 holder
+   * was already credited at 10:1, so LD is the only balance that matters.
+   */
   const litvm = useQuery({
-    queryKey: ["litvmBalance", address],
+    queryKey: ["ldPointsBalance", address],
     enabled: !!address,
     refetchInterval: 20000,
-    queryFn: async () => {
-      const res = await fetch(`${API_BASE}/points/balance/${address}`);
-      if (!res.ok) throw new Error("Could not load LitVM balance");
-      return (await res.json()) as { litvmAvailable: string; baseBalance: string };
-    },
+    queryFn: async () => readLDPoints(address!),
   });
 
-  const available = litvm.data ? BigInt(litvm.data.litvmAvailable || "0") : null;
+  const available = litvm.data ? litvm.data.total : null;
   const busy = step !== "idle";
 
   let amountValid = false;
@@ -108,7 +111,7 @@ export function PointsSection() {
         Claim your points
       </h3>
       <p className="btn-text mt-2 text-center text-black/50">
-        Points earned on LitVM convert to Base.
+        LD points earned on LitVM convert to Base.
       </p>
 
       <div className="mt-auto flex flex-col items-center gap-3 pt-8">
@@ -118,8 +121,8 @@ export function PointsSection() {
               ? "…"
               : litvm.isError
                 ? "—"
-                : formatPoints(litvm.data?.litvmAvailable ?? "0")}{" "}
-            <span className="text-white/70">LitVM available</span>
+                : formatPoints(litvm.data?.total ?? 0n)}{" "}
+            <span className="text-white/70">LD available</span>
           </p>
         </div>
 

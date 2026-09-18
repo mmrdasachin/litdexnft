@@ -716,9 +716,9 @@ export function MintCard() {
               {/* Header row: label + price (left, stacked), status badge (far right) */}
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="space-y-1">
-                  <p className="font-mono text-[11px] font-bold uppercase tracking-widest text-[var(--mint-text-muted)]">
+                  <span className="inline-flex items-center gap-2 whitespace-nowrap rounded-[8px] border border-[var(--mint-border)] bg-[var(--mint-muted)] px-4 py-1.5 font-mono text-[11px] font-bold uppercase tracking-widest text-[var(--mint-text-muted)]">
                     Public stage
-                  </p>
+                  </span>
                   <p className="font-sans text-2xl font-bold text-[var(--mint-text)]">
                     ${price !== null ? formatUsdt(price) : "…"} USDC
                   </p>
