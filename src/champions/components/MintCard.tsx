@@ -300,7 +300,7 @@ export function MintCard() {
             ${price !== null ? formatUsdt(price) : "…"} USDC
           </p>
         </div>
-        <div className="flex items-center gap-2 rounded-full border border-[var(--mint-border)] bg-[var(--mint-muted)] px-3 py-1.5">
+        <div className="flex items-center gap-2 rounded-[8px] border border-[var(--mint-border)] bg-[var(--mint-muted)] px-3 py-1.5">
           <span
             className={`size-2 rounded-full ${
               started ? "bg-[var(--mint-primary)]" : "bg-[var(--mint-success)]"
@@ -324,7 +324,7 @@ export function MintCard() {
       </div>
 
       <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-2 rounded-full border border-[var(--mint-border)] bg-[var(--mint-muted)] p-1">
+        <div className="flex items-center gap-2 rounded-[8px] border border-[var(--mint-border)] bg-[var(--mint-muted)] p-1">
           <button
             aria-label="Decrease public mint quantity"
             disabled={publicQtyClamped <= 1 || busy}
@@ -356,7 +356,7 @@ export function MintCard() {
             limitReached
           }
           onClick={() => void handleMint(publicQtyClamped)}
-          className="rounded-full bg-[var(--mint-primary)] px-8 py-3.5 font-mono text-[13px] font-bold uppercase tracking-widest text-[var(--mint-on-primary)] shadow-lg shadow-black/30 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-black/40 active:translate-y-0 active:scale-[0.98] disabled:opacity-40 disabled:hover:transform-none"
+          className="champions-cta champions-cta--auto"
         >
           {soldOut
             ? "Sold out"
@@ -385,15 +385,13 @@ export function MintCard() {
       style={mintStyle}
       className="scroll-mt-24 p-0 md:p-0"
     >
-      <div className="mb-6 grid items-end gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-        <div>
-          <p className="font-sans text-sm font-medium text-[var(--mint-text-muted)]">
-            Common rarity to start · Base Mainnet
-          </p>
-          <h3 className="mt-1 font-sans text-2xl font-bold tracking-tight text-[var(--mint-text)] md:text-3xl">
-            Mint a champion
-          </h3>
-                  </div>
+      <div className="mb-6 text-center">
+        <h3 className="nft-action-heading">Mint a champion</h3>
+        <div className="nft-action-rule" />
+        <p className="nft-action-description">Common rarity to start · Base Mainnet</p>
+      </div>
+
+      <div className="mb-6">
         <div className="w-full rounded-[8px] border border-[var(--mint-border)] bg-[var(--mint-surface)] p-5 shadow-sm">
           <div className="flex items-center justify-between gap-4">
             <p className="font-mono text-[12px] font-bold uppercase tracking-widest text-[var(--mint-text-muted)]">
@@ -407,7 +405,7 @@ export function MintCard() {
           </div>
           <div className="mt-3 h-3.5 w-full overflow-hidden rounded-full bg-[var(--mint-muted)]">
             <div
-              className="h-full rounded-full bg-[var(--mint-primary)] transition-all duration-700"
+              className="h-full rounded-[8px] bg-[var(--mint-primary)] transition-all duration-700"
               style={{ width: `${Math.min(progress, 100)}%` }}
             />
           </div>
@@ -457,7 +455,7 @@ export function MintCard() {
                 }`}
               />
             ))}
-            <span className="ml-2 rounded-full border border-[var(--mint-border)] bg-[var(--mint-surface)] px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--mint-text-muted)]">
+            <span className="ml-2 rounded-[8px] border border-[var(--mint-border)] bg-[var(--mint-surface)] px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--mint-text-muted)]">
               {activePass?.label}
             </span>
           </div>
@@ -472,7 +470,7 @@ export function MintCard() {
           <div className="flex flex-col gap-4 rounded-[8px] border border-[var(--mint-border)] bg-[var(--mint-surface)] p-5 shadow-sm md:p-6">
             {!address ? (
               <div className="flex flex-col items-start gap-3">
-                <span className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-[var(--mint-border)] bg-[var(--mint-muted)] px-4 py-1.5 font-mono text-[11px] font-bold uppercase tracking-widest text-[var(--mint-text-muted)]">
+                <span className="inline-flex items-center gap-2 whitespace-nowrap rounded-[8px] border border-[var(--mint-border)] bg-[var(--mint-muted)] px-4 py-1.5 font-mono text-[11px] font-bold uppercase tracking-widest text-[var(--mint-text-muted)]">
                   Whitelist
                 </span>
                 <p className="font-sans text-sm font-medium text-[var(--mint-text-muted)]">
@@ -490,7 +488,7 @@ export function MintCard() {
               <>
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <span className="inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-[var(--mint-primary)] px-4 py-1.5 font-mono text-[11px] font-bold uppercase tracking-widest text-[var(--mint-on-primary)] shadow-sm">
+                    <span className="inline-flex items-center gap-2 whitespace-nowrap rounded-[8px] bg-[var(--mint-primary)] px-4 py-1.5 font-mono text-[11px] font-bold uppercase tracking-widest text-[var(--mint-on-primary)] shadow-sm">
                       Whitelist eligible
                     </span>
                     <p className="mt-2 font-mono text-[11px] font-bold uppercase tracking-widest text-[var(--mint-text-muted)]">
@@ -499,7 +497,7 @@ export function MintCard() {
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-1">
-                    <div className="flex items-center gap-2 rounded-full border border-[var(--mint-border)] bg-[var(--mint-muted)] px-3 py-1.5">
+                    <div className="flex items-center gap-2 rounded-[8px] border border-[var(--mint-border)] bg-[var(--mint-muted)] px-3 py-1.5">
                       <span
                         className={`size-2 rounded-full ${
                           whitelistActive
@@ -521,7 +519,7 @@ export function MintCard() {
                 {/* Priority voucher */}
                 {priorityVoucher && price !== null && (
                   <div className="relative overflow-hidden rounded-[8px] border border-[var(--mint-border)] bg-[var(--mint-muted)] p-5 text-[var(--mint-text)] shadow-md">
-                    <div className="absolute -right-8 -top-8 size-32 rounded-full bg-[var(--mint-primary)]/20 blur-2xl" />
+                    <div className="absolute -right-8 -top-8 size-32 rounded-[8px] bg-[var(--mint-primary)]/20 blur-2xl" />
                     <div className="relative flex flex-wrap items-center justify-between gap-4">
                       <p className="font-sans text-base font-semibold">
                         You are eligible to mint at ${" "}
@@ -531,7 +529,7 @@ export function MintCard() {
                       <button
                         disabled={!correctNetwork || busy || !whitelistActive}
                         onClick={() => void handleVoucherMint([priorityVoucher])}
-                        className="rounded-full bg-[var(--mint-primary)] px-6 py-2.5 font-mono text-[12px] font-bold uppercase tracking-widest text-[var(--mint-on-primary)] shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-xl active:translate-y-0 active:scale-[0.98] disabled:opacity-40 disabled:hover:transform-none"
+                        className="champions-cta champions-cta--auto"
                       >
                         {!whitelistActive
                           ? whitelistCountdown
@@ -577,7 +575,7 @@ export function MintCard() {
                               {rarityLabel(category)}
                             </p>
                           </div>
-                          <div className="flex shrink-0 items-center gap-1 rounded-full border border-[var(--mint-border)] bg-[var(--mint-surface)] p-0.5">
+                          <div className="flex shrink-0 items-center gap-1 rounded-[8px] border border-[var(--mint-border)] bg-[var(--mint-surface)] p-0.5">
                             <button
                               aria-label={`Decrease ${category} quantity`}
                               disabled={qty <= 0 || busy}
@@ -613,7 +611,7 @@ export function MintCard() {
                     selectedVouchers.length === 0
                   }
                   onClick={() => void handleVoucherMint(selectedVouchers)}
-                  className="mt-1 w-full rounded-full bg-[var(--mint-primary)] px-6 py-3.5 font-mono text-[13px] font-bold uppercase tracking-widest text-[var(--mint-on-primary)] shadow-lg shadow-black/30 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-black/40 active:translate-y-0 active:scale-[0.98] disabled:opacity-40 disabled:hover:transform-none"
+                  className="champions-cta mt-1"
                 >
                   {!whitelistActive
                     ? whitelistCountdown
@@ -629,7 +627,7 @@ export function MintCard() {
               </>
             ) : (
               <div className="flex flex-col items-start gap-3">
-                <span className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-[var(--mint-border)] bg-[var(--mint-muted)] px-4 py-1.5 font-mono text-[11px] font-bold uppercase tracking-widest text-[var(--mint-text-muted)]">
+                <span className="inline-flex items-center gap-2 whitespace-nowrap rounded-[8px] border border-[var(--mint-border)] bg-[var(--mint-muted)] px-4 py-1.5 font-mono text-[11px] font-bold uppercase tracking-widest text-[var(--mint-text-muted)]">
                   Not whitelisted
                 </span>
                 <p className="font-sans text-base font-bold text-[var(--mint-text)]">
@@ -672,7 +670,7 @@ export function MintCard() {
               <button
                 onClick={() => void connect()}
                 disabled={connecting}
-                className="w-full rounded-full bg-[var(--mint-primary)] px-6 py-3.5 font-mono text-[13px] font-bold uppercase tracking-widest text-[var(--mint-on-primary)] shadow-lg shadow-black/30 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-black/40 active:translate-y-0 active:scale-[0.98] disabled:opacity-40 disabled:hover:transform-none"
+                className="champions-cta"
               >
                 {connecting ? "Connecting…" : "Connect wallet to mint"}
               </button>
@@ -692,30 +690,25 @@ export function MintCard() {
                     ${price !== null ? formatUsdt(price) : "…"} USDC
                   </p>
                 </div>
-                <div className="flex items-center gap-2 rounded-full border border-[var(--mint-border)] bg-[var(--mint-muted)] px-3 py-1.5">
+                <div className="flex items-center gap-2 rounded-[8px] border border-[var(--mint-border)] bg-[var(--mint-muted)] px-3 py-1.5">
                   <span
                     className={`size-2 rounded-full ${
                       started ? "bg-[var(--mint-primary)]" : "bg-[var(--mint-success)]"
                     }`}
                   />
                   <span className="font-mono text-[11px] font-bold uppercase tracking-widest text-[var(--mint-text)]">
-                    {started ? "Minting now" : "Not started"}
+                    {started
+                      ? "Minting now"
+                      : countdown
+                        ? `Starts in ${countdown}`
+                        : "Not scheduled"}
                   </span>
                 </div>
               </div>
 
-              {/* Plain text countdown line */}
-              <p className="mt-4 font-mono text-[12px] font-bold uppercase tracking-widest text-[var(--mint-text-muted)]">
-                {started
-                  ? "Minting now"
-                  : countdown
-                    ? `Starts in ${countdown}`
-                    : "Not scheduled"}
-              </p>
-
               {/* Stepper + mint button row, immediately after the countdown */}
               <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
-                <div className="flex items-center gap-2 rounded-full border border-[var(--mint-border)] bg-[var(--mint-muted)] p-1">
+                <div className="flex items-center gap-2 rounded-[8px] border border-[var(--mint-border)] bg-[var(--mint-muted)] p-1">
                   <button
                     aria-label="Decrease public mint quantity"
                     disabled={publicQtyClamped <= 1 || busy}
@@ -747,7 +740,7 @@ export function MintCard() {
                     limitReached
                   }
                   onClick={() => void handleMint(publicQtyClamped)}
-                  className="rounded-full bg-[var(--mint-primary)] px-8 py-3.5 font-mono text-[13px] font-bold uppercase tracking-widest text-[var(--mint-on-primary)] shadow-lg shadow-black/30 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-black/40 active:translate-y-0 active:scale-[0.98] disabled:opacity-40 disabled:hover:transform-none"
+                  className="champions-cta champions-cta--auto"
                 >
                   {soldOut
                     ? "Sold out"

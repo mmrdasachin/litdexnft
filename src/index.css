@@ -581,6 +581,61 @@ body.hide-nav .litdex-mobile-hamburger { display: none !important; }
   color: var(--color-brand-text-primary);
 }
 
+/* Mint CTAs and the Champions/My Points/Levels tabs reuse the exact look of the
+   "Trade Your Champions" button (.nft-action-button) so the whole NFT page reads
+   as one component set instead of two ported design languages. */
+.champions-cta,
+.champions-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 58px;
+  border: 1px solid var(--color-brand-control);
+  border-radius: 8px;
+  background: var(--color-brand-control);
+  color: var(--color-brand-control-foreground);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+.champions-cta { width: 100%; }
+.champions-cta--auto { width: auto; padding-inline: 32px; }
+.champions-cta:hover:not(:disabled),
+.champions-tab:hover { transform: translateY(-2px); filter: brightness(1.08); }
+.champions-cta:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+/* Inactive tab = outlined version of the same button. */
+.champions-tab {
+  min-height: 46px;
+  padding-inline: 26px;
+  cursor: pointer;
+}
+.champions-tab[data-active="false"] {
+  background: transparent;
+  border-color: var(--color-brand-border);
+  color: var(--color-brand-text-primary);
+}
+
+/* Levels/Champions panels still carry the standalone site's black outlines and
+   very round corners — square them off onto LitDEX's 8px language. */
+.champions-root .border-black { border-color: var(--color-brand-border) !important; }
+.champions-root .rounded-\[2\.5rem\],
+.champions-root .rounded-\[2rem\] { border-radius: 8px !important; }
+
+/* NftCard carried a translucent blue wash from the standalone site. */
+.champions-root .bg-\[\#0038FF\]\/5 { background-color: var(--color-brand-surface) !important; }
+.champions-root .border-\[\#0038FF\]\/15 { border-color: var(--color-brand-border) !important; }
+.champions-root .bg-\[\#0038FF\]\/20 { background-color: var(--color-brand-surface-2) !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  .champions-cta, .champions-tab { transition: none; }
+  .champions-cta:hover, .champions-tab:hover { transform: none; }
+}
+
 /* NFT video showcase */
 .nft-showcase-page {
   background: var(--color-brand-bg);

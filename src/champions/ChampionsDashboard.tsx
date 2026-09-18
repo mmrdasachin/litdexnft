@@ -22,9 +22,9 @@ function ConnectPrompt() {
       <button
         onClick={() => void connect()}
         disabled={connecting}
-        className="btn fx-9 btn-pill btn-lime mt-6"
+        className="champions-cta champions-cta--auto mt-6"
       >
-        <span className="btn-label">{connecting ? "Connecting…" : "Connect wallet"}</span>
+        {connecting ? "Connecting…" : "Connect wallet"}
       </button>
     </div>
   );
@@ -41,9 +41,9 @@ export function ChampionsDashboard() {
         {address && !correctNetwork && (
           <button
             onClick={() => void switchNetwork()}
-            className="btn fx-9 btn-pill btn-blue mb-6 w-full"
+            className="champions-cta mb-6"
           >
-            <span className="btn-label">switch to base</span>
+            switch to base
           </button>
         )}
 
@@ -56,9 +56,10 @@ export function ChampionsDashboard() {
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`btn fx-9 btn-pill ${tab === t.id ? "btn-lime" : "btn-ghost"}`}
+              className="champions-tab"
+              data-active={tab === t.id}
             >
-              <span className="btn-label">{t.label}</span>
+              {t.label}
             </button>
           ))}
         </div>

@@ -703,22 +703,7 @@ const NFTsPage = () => {
       className="nft-showcase-page min-h-[calc(100vh-80px)] px-4 py-8 md:px-8 md:py-12"
     >
       <div className="mx-auto w-full max-w-[1760px]">
-        <video
-          className="nft-showcase-video w-full"
-          autoPlay
-          loop
-          muted
-          playsInline
-          disablePictureInPicture
-          controlsList="nodownload noplaybackrate noremoteplayback"
-          onContextMenu={(event) => event.preventDefault()}
-          aria-label="LitDEX NFT collection showcase"
-        >
-          <source src={NFT_SHOWCASE_VIDEO_WEBM} type="video/webm" />
-          <source src={NFT_SHOWCASE_VIDEO_MP4} type="video/mp4" />
-        </video>
-
-        <div className="mt-6 grid grid-cols-1 gap-6 md:mt-8 md:gap-8">
+        <div className="grid grid-cols-1 gap-6 md:gap-8">
           {actions.map((action) => (
             <section key={action.href} className="nft-action-panel">
               <h2 className="nft-action-heading">{action.title}</h2>
