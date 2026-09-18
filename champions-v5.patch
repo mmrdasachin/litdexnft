@@ -1,0 +1,530 @@
+diff --git a/src/champions/components/ClaimModal.tsx b/src/champions/components/ClaimModal.tsx
+deleted file mode 100644
+index 63cc0f3..0000000
+--- a/src/champions/components/ClaimModal.tsx
++++ /dev/null
+@@ -1,190 +0,0 @@
+-import { useQuery } from "@tanstack/react-query";
+-import { useEffect, useState } from "react";
+-import { toast } from "sonner";
+-import { NetworkSwitcher } from "@/champions/components/NetworkSwitcher";
+-import { Button } from "@/champions/components/ui/button";
+-import {
+-  Dialog,
+-  DialogContent,
+-  DialogDescription,
+-  DialogHeader,
+-  DialogTitle,
+-} from "@/champions/components/ui/dialog";
+-import { Input } from "@/champions/components/ui/input";
+-import { useRefreshAll } from "@/champions/hooks/useLitdex";
+-import { useWallet } from "@/champions/hooks/useWallet";
+-import { API_BASE, formatPoints, parseWalletError, pointsContract } from "@/champions/lib/litdex";
+-
+-type ClaimStep = "idle" | "burning" | "signing" | "confirming";
+-
+-export function ClaimModal({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+-  const { address, getSigner, correctNetwork } = useWallet();
+-  const refreshAll = useRefreshAll();
+-  const [amount, setAmount] = useState("");
+-  const [step, setStep] = useState<ClaimStep>("idle");
+-  const [error, setError] = useState<string | null>(null);
+-
+-  useEffect(() => {
+-    if (open) {
+-      setAmount("");
+-      setStep("idle");
+-      setError(null);
+-    }
+-  }, [open]);
+-
+-  const litvm = useQuery({
+-    queryKey: ["litvmBalance", address],
+-    enabled: open && !!address,
+-    queryFn: async () => {
+-      const res = await fetch(`${API_BASE}/points/balance/${address}`);
+-      if (!res.ok) throw new Error("Could not load LitVM balance");
+-      return (await res.json()) as { litvmAvailable: string; baseBalance: string };
+-    },
+-  });
+-
+-  const available = litvm.data ? BigInt(litvm.data.litvmAvailable || "0") : null;
+-  let amountValid = false;
+-  try {
+-    if (amount.trim() !== "" && /^\d+$/.test(amount.trim())) {
+-      const a = BigInt(amount.trim());
+-      amountValid = a > 0n && (available === null || a <= available);
+-    }
+-  } catch {
+-    amountValid = false;
+-  }
+-
+-  const busy = step !== "idle";
+-
+-  async function handleConvert() {
+-    if (!address || !amountValid) return;
+-    setError(null);
+-    setStep("burning");
+-    try {
+-      const res = await fetch(`${API_BASE}/points/claim`, {
+-        method: "POST",
+-        headers: { "Content-Type": "application/json" },
+-        body: JSON.stringify({ address, amount: amount.trim() }),
+-      });
+-      const body = (await res.json().catch(() => null)) as
+-        | { totalEarned: string; expiry: string; signature: string; error?: string; message?: string }
+-        | null;
+-      if (!res.ok) {
+-        setError(body?.error || body?.message || "Claim request failed. Try again.");
+-        setStep("idle");
+-        return;
+-      }
+-      if (!body) throw new Error("bad response");
+-
+-      setStep("signing");
+-      const signer = await getSigner();
+-      const contract = pointsContract(signer);
+-      const tx = await contract.claim(body.totalEarned, body.expiry, body.signature);
+-      setStep("confirming");
+-      await tx.wait();
+-      await refreshAll();
+-      toast.success("Points claimed on Base");
+-      onOpenChange(false);
+-    } catch (err) {
+-      setError(parseWalletError(err, "Claim failed, try again."));
+-    } finally {
+-      setStep("idle");
+-    }
+-  }
+-
+-  const stepLabel =
+-    step === "burning"
+-      ? "Burning on LitVM"
+-      : step === "signing"
+-        ? "Confirm in wallet"
+-        : step === "confirming"
+-          ? "Confirming on Base"
+-          : null;
+-
+-  return (
+-    <Dialog open={open} onOpenChange={(v) => (busy ? null : onOpenChange(v))}>
+-      <DialogContent className="rounded-[2rem] border-white/30 bg-[#0038FF]/85 text-white shadow-2xl backdrop-blur-xl">
+-        <DialogHeader>
+-          <DialogTitle className="btn-text text-[#CCFF00]">
+-            Claim from LitVM
+-          </DialogTitle>
+-          <DialogDescription className="btn-text text-white/70">
+-            Burn points on LitVM and mint them as spendable points on Base Mainnet.
+-          </DialogDescription>
+-        </DialogHeader>
+-
+-        <div className="space-y-4">
+-          <div className="rounded-2xl border border-white/25 bg-white/10 p-3">
+-            {litvm.isLoading && <span className="btn-text text-white/60">Loading LitVM balance…</span>}
+-            {litvm.isError && <span className="btn-text text-[#FF8080]">Could not load LitVM balance.</span>}
+-            {litvm.data && (
+-              <span className="btn-text">
+-                You have{" "}
+-                <span className="btn-text text-[#CCFF00]">
+-                  {formatPoints(litvm.data.litvmAvailable)}
+-                </span>{" "}
+-                points on LitVM.
+-              </span>
+-            )}
+-          </div>
+-
+-          <div className="space-y-2">
+-            <label htmlFor="claim-amount" className="btn-text text-white/70">
+-              Amount to convert
+-            </label>
+-            <Input
+-              id="claim-amount"
+-              inputMode="numeric"
+-              placeholder="0"
+-              value={amount}
+-              disabled={busy}
+-              onChange={(e) => setAmount(e.target.value.replace(/[^\d]/g, ""))}
+-              className="rounded-full border-white/25 bg-white/10 font-mono text-white placeholder:text-white/40"
+-            />
+-            {available !== null && (
+-              <button
+-                type="button"
+-                className="btn-text text-xs font-semibold text-[#CCFF00] hover:underline"
+-                disabled={busy}
+-                onClick={() => setAmount(available.toString())}
+-              >
+-                Max: {formatPoints(available)}
+-              </button>
+-            )}
+-          </div>
+-
+-          {error && <p className="btn-text text-[#FF8080]">{error}</p>}
+-
+-          <NetworkSwitcher tone="dark" />
+-
+-          {busy ? (
+-            <div className="flex w-full flex-col items-center gap-3 rounded-full bg-white/10 px-6 py-4">
+-              <div className="flex gap-1.5" aria-hidden="true">
+-                {[0, 1, 2].map((i) => (
+-                  <span
+-                    key={i}
+-                    className="size-2.5 animate-bounce rounded-full bg-[#CCFF00]"
+-                    style={{ animationDelay: `${i * 150}ms` }}
+-                  />
+-                ))}
+-              </div>
+-              <p className="btn-text text-white">{stepLabel}…</p>
+-            </div>
+-          ) : (
+-            <Button
+-              className="btn fx-9 btn-pill btn-lime w-full py-6"
+-              disabled={!amountValid || !correctNetwork}
+-              onClick={() => void handleConvert()}
+-            >
+-              <span className="btn-label">Convert</span>
+-            </Button>
+-          )}
+-          {!correctNetwork && (
+-            <p className="btn-text text-center text-[#FF8080]">
+-              Claiming on-chain requires Base Mainnet.
+-            </p>
+-          )}
+-        </div>
+-      </DialogContent>
+-    </Dialog>
+-  );
+-}
+diff --git a/src/champions/components/MintCard.tsx b/src/champions/components/MintCard.tsx
+index 9c5df4d..7e471c0 100644
+--- a/src/champions/components/MintCard.tsx
++++ b/src/champions/components/MintCard.tsx
+@@ -1,6 +1,5 @@
+ import { useCallback, useEffect, useState } from "react";
+ import { Minus, Plus } from "lucide-react";
+-import { toast } from "sonner";
+ import { Spinner } from "@/champions/components/ui/reui-spinner";
+ 
+ import {
+@@ -13,6 +12,7 @@ import {
+ } from "@/champions/hooks/useLitdex";
+ import { useWallet } from "@/champions/hooks/useWallet";
+ import { PASS_CARD_IMAGES, RARITY_ICONS } from "@/champions/lib/images";
++import { showError, showSuccess } from "@/lib/feedback";
+ import {
+   NFT_ADDRESS,
+   discountLabel,
+@@ -20,6 +20,7 @@ import {
+   formatUsdt,
+   mintedTokenIdsFromReceipt,
+   nftContract,
++  openSeaUrl,
+   parseWalletError,
+   prewarmMetadata,
+   usdcContract,
+@@ -59,6 +60,34 @@ const mintStyle = {
+     "linear-gradient(135deg, oklch(0.22 0.03 260), oklch(0.45 0.18 260))",
+ } as React.CSSProperties;
+ 
++const OPENSEA_COLLECTION_URL = "https://opensea.io/collection/litdex";
++
++/** LitDEX's own success popup (same one a swap uses), with an OpenSea link. */
++function showMintSuccess(title: string, tokenIds: bigint[], txHash?: string) {
++  const first = tokenIds[0];
++  showSuccess({
++    title,
++    subtitle: "Litdex Genesis Champions · Base Mainnet",
++    rows: [
++      ...(tokenIds.length > 0
++        ? [{ label: "Token", value: tokenIds.map((id) => `#${id.toString()}`).join(", ") }]
++        : []),
++      {
++        label: "OpenSea",
++        value: first !== undefined ? "Trade on OpenSea" : "View collection",
++        href: first !== undefined ? openSeaUrl(first) : OPENSEA_COLLECTION_URL,
++      },
++      ...(txHash
++        ? [{
++            label: "Transaction",
++            value: `${txHash.slice(0, 6)}…${txHash.slice(-4)}`,
++            href: `https://basescan.org/tx/${txHash}`,
++          }]
++        : []),
++    ],
++  });
++}
++
+ export function MintCard() {
+   const { address, getSigner, correctNetwork, connect, connecting } = useWallet();
+   const { data: mintStatus, isLoading, refetch: refetchStatus } = useMintStatus();
+@@ -240,11 +269,13 @@ export function MintCard() {
+       setStatus("Success");
+       await refreshAll();
+       await refetchStatus();
+-      toast.success(
+-        quantity > 1 ? `${quantity} NFTs minted` : "NFT minted",
++      showMintSuccess(
++        quantity > 1 ? `${quantity} champions minted` : "Champion minted",
++        newIds,
++        receipt?.hash,
+       );
+     } catch (err) {
+-      toast.error(parseWalletError(err, "Mint failed, try again."));
++      showError(parseWalletError(err, "Mint failed, try again."));
+     } finally {
+       setStatus(null);
+     }
+@@ -279,11 +310,13 @@ export function MintCard() {
+       setStatus("Success");
+       await refreshAll();
+       await Promise.all([refetchStatus(), refetchVouchers()]);
+-      toast.success(
+-        `${vouchers.length} ${vouchers.length === 1 ? "NFT" : "NFTs"} minted with whitelist discounts`,
++      showMintSuccess(
++        `${vouchers.length} ${vouchers.length === 1 ? "champion" : "champions"} minted at whitelist price`,
++        newIds,
++        receipt?.hash,
+       );
+     } catch (err) {
+-      toast.error(parseWalletError(err, "Voucher mint failed, try again."));
++      showError(parseWalletError(err, "Voucher mint failed, try again."));
+     } finally {
+       setStatus(null);
+     }
+diff --git a/src/champions/components/NftCard.tsx b/src/champions/components/NftCard.tsx
+index 797441e..bb2ccb2 100644
+--- a/src/champions/components/NftCard.tsx
++++ b/src/champions/components/NftCard.tsx
+@@ -82,7 +82,6 @@ export function NftCard({ nft, compact = false }: { nft: OwnedNft; compact?: boo
+   const artworkVersion = `${nft.rarity}-${nft.level}-${nft.damaged ? 1 : 0}`;
+   const { data: artwork, isLoading: artLoading } = useNftArtwork(nft.tokenId, artworkVersion);
+   const [busy, setBusy] = useState<string | null>(null);
+-  const [recipient, setRecipient] = useState("");
+   const [updating, setUpdating] = useState(false);
+ 
+   const atMax = nft.level >= MAX_LEVEL;
+@@ -119,7 +118,7 @@ export function NftCard({ nft, compact = false }: { nft: OwnedNft; compact?: boo
+       const signer = await getSigner();
+       await fn(signer);
+       if (expected) await prewarm(expected);
+-      if (label !== "Transfer") await waitForTokenStateChange(nft.tokenId, before);
++      await waitForTokenStateChange(nft.tokenId, before);
+       await refreshAll();
+       toast.success(`${label} complete`);
+     } catch (err) {
+@@ -171,22 +170,6 @@ export function NftCard({ nft, compact = false }: { nft: OwnedNft; compact?: boo
+       "Repair failed, try again.",
+     );
+ 
+-  const handleTransfer = () => {
+-    if (!ethers.isAddress(recipient)) {
+-      toast.error("Enter a valid recipient address.");
+-      return;
+-    }
+-    return run(
+-      "Transfer",
+-      async (signer) => {
+-        const tx = await nftWith(signer).transferFrom(address!, recipient, nft.tokenId);
+-        await tx.wait();
+-        setRecipient("");
+-      },
+-      "Transfer failed, try again.",
+-    );
+-  };
+-
+   const disabled = !correctNetwork || busy !== null;
+   const rarityColor = RARITY_COLOR[nft.rarity] ?? "#A8A0BE";
+ 
+@@ -294,23 +277,6 @@ export function NftCard({ nft, compact = false }: { nft: OwnedNft; compact?: boo
+ 
+       {!compact && (
+       <div className="space-y-2 border-t border-black/10 pt-4">
+-        <p className="btn-text text-black/50">Transfer</p>
+-        <div className="flex gap-2">
+-          <input
+-            placeholder="0x recipient"
+-            value={recipient}
+-            onChange={(e) => setRecipient(e.target.value)}
+-            disabled={disabled}
+-            className="btn-text w-full rounded-full border border-black/20 bg-white px-4 py-2 text-black outline-none placeholder:text-black/40 focus:border-[#0038FF]"
+-          />
+-          <button
+-            onClick={() => void handleTransfer()}
+-            disabled={disabled}
+-            className="btn fx-9 btn-pill btn-lime shrink-0"
+-          >
+-            <span className="btn-label">{busy === "Transfer" ? "…" : "Send"}</span>
+-          </button>
+-        </div>
+         <a
+           href={openSeaUrl(nft.tokenId)}
+           target="_blank"
+diff --git a/src/champions/components/PointsSection.tsx b/src/champions/components/PointsSection.tsx
+index f9dda3f..2f0ceff 100644
+--- a/src/champions/components/PointsSection.tsx
++++ b/src/champions/components/PointsSection.tsx
+@@ -1,12 +1,23 @@
+ import { useQuery } from "@tanstack/react-query";
+ import { useState } from "react";
+-import { ClaimModal } from "@/champions/components/ClaimModal";
++import { useRefreshAll } from "@/champions/hooks/useLitdex";
+ import { useWallet } from "@/champions/hooks/useWallet";
+-import { API_BASE, formatPoints } from "@/champions/lib/litdex";
++import { API_BASE, formatPoints, parseWalletError, pointsContract } from "@/champions/lib/litdex";
++import { showError, showSuccess } from "@/lib/feedback";
+ 
++type ClaimStep = "idle" | "burning" | "signing" | "confirming";
++
++/**
++ * Claiming happens inline — an amount field sits next to a compact Claim
++ * button, so there is no second dialog on top of the page. Success is
++ * reported through LitDEX's own SuccessCard (the same popup a swap uses)
++ * instead of a toast, so the NFT section matches the rest of the site.
++ */
+ export function PointsSection() {
+-  const [open, setOpen] = useState(false);
+-  const { address } = useWallet();
++  const { address, getSigner, correctNetwork } = useWallet();
++  const refreshAll = useRefreshAll();
++  const [amount, setAmount] = useState("");
++  const [step, setStep] = useState<ClaimStep>("idle");
+ 
+   const litvm = useQuery({
+     queryKey: ["litvmBalance", address],
+@@ -19,6 +30,78 @@ export function PointsSection() {
+     },
+   });
+ 
++  const available = litvm.data ? BigInt(litvm.data.litvmAvailable || "0") : null;
++  const busy = step !== "idle";
++
++  let amountValid = false;
++  try {
++    const raw = amount.trim();
++    if (raw !== "" && /^\d+$/.test(raw)) {
++      const a = BigInt(raw);
++      amountValid = a > 0n && (available === null || a <= available);
++    }
++  } catch {
++    amountValid = false;
++  }
++
++  async function handleClaim() {
++    if (!address || !amountValid) return;
++    setStep("burning");
++    try {
++      const res = await fetch(`${API_BASE}/points/claim`, {
++        method: "POST",
++        headers: { "Content-Type": "application/json" },
++        body: JSON.stringify({ address, amount: amount.trim() }),
++      });
++      const body = (await res.json().catch(() => null)) as
++        | { totalEarned: string; expiry: string; signature: string; error?: string; message?: string }
++        | null;
++      if (!res.ok || !body) {
++        showError(body?.error || body?.message || "Claim request failed. Try again.");
++        setStep("idle");
++        return;
++      }
++
++      setStep("signing");
++      const signer = await getSigner();
++      const tx = await pointsContract(signer).claim(body.totalEarned, body.expiry, body.signature);
++      setStep("confirming");
++      const receipt = await tx.wait();
++      await refreshAll();
++
++      const claimed = amount.trim();
++      setAmount("");
++      showSuccess({
++        title: "Points claimed",
++        subtitle: "LitVM → Base Mainnet",
++        rows: [
++          { label: "Claimed", value: `${formatPoints(claimed)} pts` },
++          { label: "Network", value: "Base Mainnet" },
++          ...(receipt?.hash
++            ? [{
++                label: "Transaction",
++                value: `${receipt.hash.slice(0, 6)}…${receipt.hash.slice(-4)}`,
++                href: `https://basescan.org/tx/${receipt.hash}`,
++              }]
++            : []),
++        ],
++      });
++    } catch (err) {
++      showError(parseWalletError(err, "Claim failed, try again."));
++    } finally {
++      setStep("idle");
++    }
++  }
++
++  const buttonLabel =
++    step === "burning"
++      ? "Burning…"
++      : step === "signing"
++        ? "Confirm…"
++        : step === "confirming"
++          ? "Confirming…"
++          : "Claim";
++
+   return (
+     <div className="flex flex-col rounded-[2rem] bg-[#F4F4F2] p-6 md:p-8">
+       <h3 className="btn-heading heading-ul text-center text-black">
+@@ -29,7 +112,7 @@ export function PointsSection() {
+       </p>
+ 
+       <div className="mt-auto flex flex-col items-center gap-3 pt-8">
+-        <div className="rounded-full bg-[#0038FF] px-6 py-3 shadow-lg">
++        <div className="rounded-[8px] bg-[#0038FF] px-6 py-3 shadow-lg">
+           <p className="btn-text font-bold text-white">
+             {litvm.isLoading
+               ? "…"
+@@ -39,15 +122,41 @@ export function PointsSection() {
+             <span className="text-white/70">LitVM available</span>
+           </p>
+         </div>
+-        <button
+-          onClick={() => setOpen(true)}
+-          className="btn fx-9 btn-pill btn-lime w-full text-center"
+-        >
+-          <span className="btn-label">Claim</span>
+-        </button>
+-      </div>
+ 
+-      <ClaimModal open={open} onOpenChange={setOpen} />
++        <div className="flex w-full items-stretch gap-2">
++          <div className="relative flex-1">
++            <input
++              inputMode="numeric"
++              placeholder="Amount"
++              value={amount}
++              disabled={busy || !address}
++              onChange={(e) => setAmount(e.target.value.replace(/[^\d]/g, ""))}
++              className="btn-text h-full w-full rounded-[8px] border border-black/20 bg-white px-4 py-3 pr-14 text-black outline-none placeholder:text-black/40"
++            />
++            <button
++              type="button"
++              disabled={busy || available === null || available === 0n}
++              onClick={() => setAmount((available ?? 0n).toString())}
++              className="btn-text absolute right-2 top-1/2 -translate-y-1/2 rounded-[6px] px-2 py-1 text-black/50 hover:text-black disabled:opacity-40"
++            >
++              Max
++            </button>
++          </div>
++          <button
++            onClick={() => void handleClaim()}
++            disabled={busy || !amountValid || !correctNetwork}
++            className="champions-cta champions-cta--auto shrink-0"
++          >
++            {buttonLabel}
++          </button>
++        </div>
++
++        {address && !correctNetwork && (
++          <p className="btn-text text-center text-black/50">
++            Switch to Base Mainnet to claim.
++          </p>
++        )}
++      </div>
+     </div>
+   );
+ }

@@ -82,7 +82,6 @@ export function NftCard({ nft, compact = false }: { nft: OwnedNft; compact?: boo
   const artworkVersion = `${nft.rarity}-${nft.level}-${nft.damaged ? 1 : 0}`;
   const { data: artwork, isLoading: artLoading } = useNftArtwork(nft.tokenId, artworkVersion);
   const [busy, setBusy] = useState<string | null>(null);
-  const [recipient, setRecipient] = useState("");
   const [updating, setUpdating] = useState(false);
 
   const atMax = nft.level >= MAX_LEVEL;
@@ -119,7 +118,7 @@ export function NftCard({ nft, compact = false }: { nft: OwnedNft; compact?: boo
       const signer = await getSigner();
       await fn(signer);
       if (expected) await prewarm(expected);
-      if (label !== "Transfer") await waitForTokenStateChange(nft.tokenId, before);
+      await waitForTokenStateChange(nft.tokenId, before);
       await refreshAll();
       toast.success(`${label} complete`);
     } catch (err) {
@@ -170,22 +169,6 @@ export function NftCard({ nft, compact = false }: { nft: OwnedNft; compact?: boo
       },
       "Repair failed, try again.",
     );
-
-  const handleTransfer = () => {
-    if (!ethers.isAddress(recipient)) {
-      toast.error("Enter a valid recipient address.");
-      return;
-    }
-    return run(
-      "Transfer",
-      async (signer) => {
-        const tx = await nftWith(signer).transferFrom(address!, recipient, nft.tokenId);
-        await tx.wait();
-        setRecipient("");
-      },
-      "Transfer failed, try again.",
-    );
-  };
 
   const disabled = !correctNetwork || busy !== null;
   const rarityColor = RARITY_COLOR[nft.rarity] ?? "#A8A0BE";
@@ -294,23 +277,6 @@ export function NftCard({ nft, compact = false }: { nft: OwnedNft; compact?: boo
 
       {!compact && (
       <div className="space-y-2 border-t border-black/10 pt-4">
-        <p className="btn-text text-black/50">Transfer</p>
-        <div className="flex gap-2">
-          <input
-            placeholder="0x recipient"
-            value={recipient}
-            onChange={(e) => setRecipient(e.target.value)}
-            disabled={disabled}
-            className="btn-text w-full rounded-full border border-black/20 bg-white px-4 py-2 text-black outline-none placeholder:text-black/40 focus:border-[#0038FF]"
-          />
-          <button
-            onClick={() => void handleTransfer()}
-            disabled={disabled}
-            className="btn fx-9 btn-pill btn-lime shrink-0"
-          >
-            <span className="btn-label">{busy === "Transfer" ? "…" : "Send"}</span>
-          </button>
-        </div>
         <a
           href={openSeaUrl(nft.tokenId)}
           target="_blank"

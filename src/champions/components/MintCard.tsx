@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 import { Minus, Plus } from "lucide-react";
-import { toast } from "sonner";
 import { Spinner } from "@/champions/components/ui/reui-spinner";
 
 import {
@@ -13,6 +12,7 @@ import {
 } from "@/champions/hooks/useLitdex";
 import { useWallet } from "@/champions/hooks/useWallet";
 import { PASS_CARD_IMAGES, RARITY_ICONS } from "@/champions/lib/images";
+import { showError, showSuccess } from "@/lib/feedback";
 import {
   NFT_ADDRESS,
   discountLabel,
@@ -20,6 +20,7 @@ import {
   formatUsdt,
   mintedTokenIdsFromReceipt,
   nftContract,
+  openSeaUrl,
   parseWalletError,
   prewarmMetadata,
   usdcContract,
@@ -58,6 +59,34 @@ const mintStyle = {
   "--mint-gradient-premium":
     "linear-gradient(135deg, oklch(0.22 0.03 260), oklch(0.45 0.18 260))",
 } as React.CSSProperties;
+
+const OPENSEA_COLLECTION_URL = "https://opensea.io/collection/litdex";
+
+/** LitDEX's own success popup (same one a swap uses), with an OpenSea link. */
+function showMintSuccess(title: string, tokenIds: bigint[], txHash?: string) {
+  const first = tokenIds[0];
+  showSuccess({
+    title,
+    subtitle: "Litdex Genesis Champions · Base Mainnet",
+    rows: [
+      ...(tokenIds.length > 0
+        ? [{ label: "Token", value: tokenIds.map((id) => `#${id.toString()}`).join(", ") }]
+        : []),
+      {
+        label: "OpenSea",
+        value: first !== undefined ? "Trade on OpenSea" : "View collection",
+        href: first !== undefined ? openSeaUrl(first) : OPENSEA_COLLECTION_URL,
+      },
+      ...(txHash
+        ? [{
+            label: "Transaction",
+            value: `${txHash.slice(0, 6)}…${txHash.slice(-4)}`,
+            href: `https://basescan.org/tx/${txHash}`,
+          }]
+        : []),
+    ],
+  });
+}
 
 export function MintCard() {
   const { address, getSigner, correctNetwork, connect, connecting } = useWallet();
@@ -240,11 +269,13 @@ export function MintCard() {
       setStatus("Success");
       await refreshAll();
       await refetchStatus();
-      toast.success(
-        quantity > 1 ? `${quantity} NFTs minted` : "NFT minted",
+      showMintSuccess(
+        quantity > 1 ? `${quantity} champions minted` : "Champion minted",
+        newIds,
+        receipt?.hash,
       );
     } catch (err) {
-      toast.error(parseWalletError(err, "Mint failed, try again."));
+      showError(parseWalletError(err, "Mint failed, try again."));
     } finally {
       setStatus(null);
     }
@@ -279,11 +310,13 @@ export function MintCard() {
       setStatus("Success");
       await refreshAll();
       await Promise.all([refetchStatus(), refetchVouchers()]);
-      toast.success(
-        `${vouchers.length} ${vouchers.length === 1 ? "NFT" : "NFTs"} minted with whitelist discounts`,
+      showMintSuccess(
+        `${vouchers.length} ${vouchers.length === 1 ? "champion" : "champions"} minted at whitelist price`,
+        newIds,
+        receipt?.hash,
       );
     } catch (err) {
-      toast.error(parseWalletError(err, "Voucher mint failed, try again."));
+      showError(parseWalletError(err, "Voucher mint failed, try again."));
     } finally {
       setStatus(null);
     }
