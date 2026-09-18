@@ -128,8 +128,8 @@ export function NftSection({ onManage }: { onManage?: () => void }) {
         </div>
       )}
 
-      {isLoading && <LoadingBlock label="Loading your champions…" />}
-      {!isFetching && isError && (
+      {isLoading && !isError && <LoadingBlock label="Loading your champions…" />}
+      {isError && (
         <div className="rounded-[2rem] border-2 border-dashed border-red-200 bg-red-50 p-8 text-center">
           <p className="btn-text text-red-700">
             Couldn&apos;t load your champions.{" "}

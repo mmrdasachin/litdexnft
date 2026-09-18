@@ -414,8 +414,8 @@ body.hide-nav .litdex-mobile-hamburger { display: none !important; }
 
 /* ---------- Champions NFT section (ported styles, scoped) ---------- */
 .champions-root {
-  background: #0038ff;
-  color: #000;
+  background: transparent;
+  color: var(--color-brand-text-primary);
 }
 .champions-root .btn-text {
   font-family: "JetBrains Mono", monospace;
@@ -495,11 +495,91 @@ body.hide-nav .litdex-mobile-hamburger { display: none !important; }
 .champions-root .btn[aria-disabled="true"] { cursor: not-allowed; opacity: 0.4; }
 .champions-root .btn:disabled:hover,
 .champions-root .btn[aria-disabled="true"]:hover { transform: none; box-shadow: none; }
-.champions-root .btn-pill { border-radius: 9999px; }
-.champions-root .btn-lime { --bink: #000000; --bsurf: #ccff00; background-color: #ccff00; }
-.champions-root .btn-blue { --bink: #ffffff; --bsurf: #0038ff; background-color: #0038ff; }
-.champions-root .btn-ghost { --bink: #ffffff; --bsurf: transparent; background-color: transparent; }
-.champions-root .btn-white { --bink: #0038ff; --bsurf: #ffffff; background-color: #ffffff; }
+.champions-root .btn-pill { border-radius: 8px; }
+.champions-root .btn-lime {
+  --bink: var(--color-brand-control-foreground);
+  --bsurf: var(--color-brand-control);
+  background-color: var(--color-brand-control);
+  border-color: var(--color-brand-control);
+}
+.champions-root .btn-blue {
+  --bink: var(--color-brand-text-primary);
+  --bsurf: var(--color-brand-surface-2);
+  background-color: var(--color-brand-surface-2);
+  border-color: var(--color-brand-border);
+}
+.champions-root .btn-ghost {
+  --bink: var(--color-brand-text-primary);
+  --bsurf: transparent;
+  background-color: transparent;
+  border-color: var(--color-brand-border);
+}
+.champions-root .btn-white {
+  --bink: var(--color-brand-control-foreground);
+  --bsurf: var(--color-brand-text-primary);
+  background-color: var(--color-brand-text-primary);
+}
+
+/* --------------------------------------------------------------------
+ * Theme bridge.
+ *
+ * The Champions components were written for their own standalone site
+ * (blue #0038FF canvas, lime #CCFF00 accent, white cards, black text)
+ * with those colours hardcoded as Tailwind utilities across ~2000 lines.
+ * Rather than rewrite every component, the utilities are re-pointed at
+ * LitDEX's brand tokens here, scoped to .champions-root so nothing else
+ * on the site is touched. Because these are the same CSS variables the
+ * rest of LitDEX uses, this section also follows the light/dark toggle
+ * for free.
+ * ------------------------------------------------------------------ */
+.champions-root .heading-ul::after { background: var(--color-brand-control); }
+
+.champions-root .bg-white,
+.champions-root .bg-\[\#F4F4F2\] { background-color: var(--color-brand-surface) !important; }
+.champions-root .bg-black { background-color: var(--color-brand-bg) !important; }
+.champions-root .bg-\[\#0038FF\] { background-color: var(--color-brand-surface-2) !important; }
+.champions-root .bg-\[\#CCFF00\] { background-color: var(--color-brand-control) !important; }
+
+.champions-root .text-black,
+.champions-root .text-white { color: var(--color-brand-text-primary) !important; }
+.champions-root .text-black\/60,
+.champions-root .text-black\/50,
+.champions-root .text-black\/40 { color: var(--color-brand-text-muted) !important; }
+.champions-root .text-\[\#0038FF\],
+.champions-root .text-\[\#CCFF00\] { color: var(--color-brand-control) !important; }
+
+.champions-root .border-black\/20,
+.champions-root .border-black\/15,
+.champions-root .border-black\/10,
+.champions-root .border-black\/5,
+.champions-root .border-\[\#0038FF\] { border-color: var(--color-brand-border) !important; }
+
+/* MintCard uses a light gradient panel — flatten it onto the dark surface. */
+.champions-root .from-slate-50,
+.champions-root .via-white,
+.champions-root .to-indigo-50 { --tw-gradient-from: var(--color-brand-surface); --tw-gradient-via: var(--color-brand-surface); --tw-gradient-to: var(--color-brand-surface); }
+.champions-root .bg-gradient-to-br { background-image: none !important; background-color: var(--color-brand-surface) !important; }
+
+/* Form controls inside the section (rarity / status / sort selects). */
+.champions-root select {
+  background-color: var(--color-brand-surface-2) !important;
+  border-color: var(--color-brand-border) !important;
+  color: var(--color-brand-text-primary) !important;
+}
+.champions-root select option {
+  background-color: var(--color-brand-surface-2);
+  color: var(--color-brand-text-primary);
+}
+
+.champions-panel {
+  border: 1px solid var(--color-brand-border);
+  background: var(--color-brand-bg);
+}
+.champions-root .champions-empty {
+  border-color: var(--color-brand-border);
+  background: var(--color-brand-surface);
+  color: var(--color-brand-text-primary);
+}
 
 /* NFT video showcase */
 .nft-showcase-page {

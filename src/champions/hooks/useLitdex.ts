@@ -166,6 +166,10 @@ export function useOwnedNfts() {
   return useQuery({
     queryKey: ["ownedNfts", address],
     enabled: !!address,
+    // One retry only. The default (3 x 30s timeout) meant a failing request
+    // sat on "Loading your champions…" for two minutes before the UI ever
+    // admitted something was wrong.
+    retry: 1,
     // Show the last known list instantly, then refresh in the background.
     initialData: () => (address ? readOwnedCache(address) : undefined),
     initialDataUpdatedAt: 0,
@@ -177,7 +181,6 @@ export function useOwnedNfts() {
       try {
         const res = await fetch(url, { signal: controller.signal });
         const json = (await res.json()) as ChampionsApiResponse;
-        console.log("[useOwnedNfts] API response:", json);
         if (!res.ok) {
           const err = (json as { error?: string }).error;
           throw new Error(err ?? `champions fetch failed (${res.status})`);

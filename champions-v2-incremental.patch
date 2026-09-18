@@ -1,0 +1,441 @@
+diff --git a/src/champions/ChampionsDashboard.tsx b/src/champions/ChampionsDashboard.tsx
+index 9b70a23..b520796 100644
+--- a/src/champions/ChampionsDashboard.tsx
++++ b/src/champions/ChampionsDashboard.tsx
+@@ -6,20 +6,19 @@ import { NftSection } from "@/champions/components/NftSection";
+ import { PointsSection } from "@/champions/components/PointsSection";
+ import { useWallet } from "@/champions/hooks/useWallet";
+ 
+-type Tab = "champions" | "points" | "levels" | "mint";
++type Tab = "champions" | "points" | "levels";
+ 
+ const TABS: { id: Tab; label: string }[] = [
+   { id: "champions", label: "Champions" },
+   { id: "points", label: "My Points" },
+   { id: "levels", label: "Levels" },
+-  { id: "mint", label: "Mint" },
+ ];
+ 
+ function ConnectPrompt() {
+   const { connect, connecting } = useWallet();
+   return (
+-    <div className="rounded-[2rem] border-2 border-dashed border-black/15 bg-[#F4F4F2] p-10 text-center">
+-      <p className="btn-text text-black">Connect your wallet to view this section</p>
++    <div className="champions-empty rounded-[2rem] border-2 border-dashed p-10 text-center">
++      <p className="btn-text">Connect your wallet to view this section</p>
+       <button
+         onClick={() => void connect()}
+         disabled={connecting}
+@@ -36,10 +35,23 @@ export function ChampionsDashboard() {
+   const [tab, setTab] = useState<Tab>("champions");
+ 
+   return (
+-    <div className="champions-root rounded-[2rem] px-4 py-10 md:px-8 md:py-12">
++    <div className="champions-root rounded-[8px]">
+       <div className="mx-auto w-full max-w-[1600px]">
+-        {/* Tab bar */}
+-        <div className="mb-8 flex flex-wrap justify-center gap-2">
++        {/* Wrong-network nudge — single wallet, same one connected in the header */}
++        {address && !correctNetwork && (
++          <button
++            onClick={() => void switchNetwork()}
++            className="btn fx-9 btn-pill btn-blue mb-6 w-full"
++          >
++            <span className="btn-label">switch to base</span>
++          </button>
++        )}
++
++        {/* Mint is always the first thing under "Trade your champions" — no tab for it */}
++        <MintCard />
++
++        {/* Tabs for everything else */}
++        <div className="mt-10 mb-6 flex flex-wrap justify-center gap-2">
+           {TABS.map((t) => (
+             <button
+               key={t.id}
+@@ -51,20 +63,7 @@ export function ChampionsDashboard() {
+           ))}
+         </div>
+ 
+-        {/* Wrong-network nudge (single wallet — same one connected up top) */}
+-        {address && !correctNetwork && (
+-          <button
+-            onClick={() => void switchNetwork()}
+-            className="btn fx-9 btn-pill btn-blue mb-8 w-full"
+-          >
+-            <span className="btn-label">switch to base</span>
+-          </button>
+-        )}
+-
+-        {/* Tab content */}
+-        <div className="rounded-[2rem] bg-white p-4 md:p-8">
+-          {tab === "mint" && <MintCard />}
+-
++        <div className="champions-panel rounded-[8px] p-4 md:p-8">
+           {tab === "champions" &&
+             (address ? (
+               <NftSection onManage={() => setTab("levels")} />
+diff --git a/src/champions/assets/common.webp.asset.json b/src/champions/assets/common.webp.asset.json
+deleted file mode 100644
+index ef4325c..0000000
+--- a/src/champions/assets/common.webp.asset.json
++++ /dev/null
+@@ -1,11 +0,0 @@
+-{
+-  "version": 1,
+-  "asset_id": "7ddba22e-2f1e-40ac-a8db-ebfa6672298f",
+-  "project_id": "968d03b7-7d05-41ba-aecd-69e53de9b984",
+-  "url": "/__l5e/assets-v1/7ddba22e-2f1e-40ac-a8db-ebfa6672298f/common.webp",
+-  "r2_key": "a/v1/968d03b7-7d05-41ba-aecd-69e53de9b984/7ddba22e-2f1e-40ac-a8db-ebfa6672298f/common.webp",
+-  "original_filename": "common.webp",
+-  "size": 7638,
+-  "content_type": "image/webp",
+-  "created_at": "2026-09-10T07:36:20Z"
+-}
+diff --git a/src/champions/assets/epic.webp.asset.json b/src/champions/assets/epic.webp.asset.json
+deleted file mode 100644
+index 8d95080..0000000
+--- a/src/champions/assets/epic.webp.asset.json
++++ /dev/null
+@@ -1,11 +0,0 @@
+-{
+-  "version": 1,
+-  "asset_id": "fee936b4-794d-4ff8-99e9-9fd73417a4a5",
+-  "project_id": "968d03b7-7d05-41ba-aecd-69e53de9b984",
+-  "url": "/__l5e/assets-v1/fee936b4-794d-4ff8-99e9-9fd73417a4a5/epic.webp",
+-  "r2_key": "a/v1/968d03b7-7d05-41ba-aecd-69e53de9b984/fee936b4-794d-4ff8-99e9-9fd73417a4a5/epic.webp",
+-  "original_filename": "epic.webp",
+-  "size": 9574,
+-  "content_type": "image/webp",
+-  "created_at": "2026-09-10T07:36:32Z"
+-}
+diff --git a/src/champions/assets/legend.webp.asset.json b/src/champions/assets/legend.webp.asset.json
+deleted file mode 100644
+index 72d4e01..0000000
+--- a/src/champions/assets/legend.webp.asset.json
++++ /dev/null
+@@ -1,11 +0,0 @@
+-{
+-  "version": 1,
+-  "asset_id": "0f4c83f2-d9d5-4b0a-8980-2a9d2eba7bdb",
+-  "project_id": "968d03b7-7d05-41ba-aecd-69e53de9b984",
+-  "url": "/__l5e/assets-v1/0f4c83f2-d9d5-4b0a-8980-2a9d2eba7bdb/legend.webp",
+-  "r2_key": "a/v1/968d03b7-7d05-41ba-aecd-69e53de9b984/0f4c83f2-d9d5-4b0a-8980-2a9d2eba7bdb/legend.webp",
+-  "original_filename": "legend.webp",
+-  "size": 11716,
+-  "content_type": "image/webp",
+-  "created_at": "2026-09-10T07:36:37Z"
+-}
+diff --git a/src/champions/assets/rare.webp.asset.json b/src/champions/assets/rare.webp.asset.json
+deleted file mode 100644
+index 1b14cbe..0000000
+--- a/src/champions/assets/rare.webp.asset.json
++++ /dev/null
+@@ -1,11 +0,0 @@
+-{
+-  "version": 1,
+-  "asset_id": "8e63cb81-f74e-4196-94df-dbf10a2dc369",
+-  "project_id": "968d03b7-7d05-41ba-aecd-69e53de9b984",
+-  "url": "/__l5e/assets-v1/8e63cb81-f74e-4196-94df-dbf10a2dc369/rare.webp",
+-  "r2_key": "a/v1/968d03b7-7d05-41ba-aecd-69e53de9b984/8e63cb81-f74e-4196-94df-dbf10a2dc369/rare.webp",
+-  "original_filename": "rare.webp",
+-  "size": 10342,
+-  "content_type": "image/webp",
+-  "created_at": "2026-09-10T07:36:26Z"
+-}
+diff --git a/src/champions/assets/rarity-icons/LitCore.png.asset.json b/src/champions/assets/rarity-icons/LitCore.png.asset.json
+deleted file mode 100644
+index 5c0df7c..0000000
+--- a/src/champions/assets/rarity-icons/LitCore.png.asset.json
++++ /dev/null
+@@ -1,11 +0,0 @@
+-{
+-  "version": 1,
+-  "asset_id": "3c20af82-4634-44e6-9a55-66c5cc752721",
+-  "project_id": "968d03b7-7d05-41ba-aecd-69e53de9b984",
+-  "url": "/__l5e/assets-v1/3c20af82-4634-44e6-9a55-66c5cc752721/LitCore.png",
+-  "r2_key": "a/v1/968d03b7-7d05-41ba-aecd-69e53de9b984/3c20af82-4634-44e6-9a55-66c5cc752721/LitCore.png",
+-  "original_filename": "LitCore.png",
+-  "size": 532391,
+-  "content_type": "image/png",
+-  "created_at": "2026-09-10T07:36:04Z"
+-}
+diff --git a/src/champions/assets/rarity-icons/LitGod.png.asset.json b/src/champions/assets/rarity-icons/LitGod.png.asset.json
+deleted file mode 100644
+index 61d8e24..0000000
+--- a/src/champions/assets/rarity-icons/LitGod.png.asset.json
++++ /dev/null
+@@ -1,11 +0,0 @@
+-{
+-  "version": 1,
+-  "asset_id": "952e7feb-482e-4bab-9b14-ad7dfd31b1d6",
+-  "project_id": "968d03b7-7d05-41ba-aecd-69e53de9b984",
+-  "url": "/__l5e/assets-v1/952e7feb-482e-4bab-9b14-ad7dfd31b1d6/LitGod.png",
+-  "r2_key": "a/v1/968d03b7-7d05-41ba-aecd-69e53de9b984/952e7feb-482e-4bab-9b14-ad7dfd31b1d6/LitGod.png",
+-  "original_filename": "LitGod.png",
+-  "size": 616541,
+-  "content_type": "image/png",
+-  "created_at": "2026-09-10T07:36:10Z"
+-}
+diff --git a/src/champions/assets/rarity-icons/LitShard.png.asset.json b/src/champions/assets/rarity-icons/LitShard.png.asset.json
+deleted file mode 100644
+index 2ac8d8f..0000000
+--- a/src/champions/assets/rarity-icons/LitShard.png.asset.json
++++ /dev/null
+@@ -1,11 +0,0 @@
+-{
+-  "version": 1,
+-  "asset_id": "75fc754f-38ee-4b3d-8980-cff755685b9a",
+-  "project_id": "968d03b7-7d05-41ba-aecd-69e53de9b984",
+-  "url": "/__l5e/assets-v1/75fc754f-38ee-4b3d-8980-cff755685b9a/LitShard.png",
+-  "r2_key": "a/v1/968d03b7-7d05-41ba-aecd-69e53de9b984/75fc754f-38ee-4b3d-8980-cff755685b9a/LitShard.png",
+-  "original_filename": "LitShard.png",
+-  "size": 304258,
+-  "content_type": "image/png",
+-  "created_at": "2026-09-10T07:36:16Z"
+-}
+diff --git a/src/champions/components/MintCard.tsx b/src/champions/components/MintCard.tsx
+index 1d7d42f..e939589 100644
+--- a/src/champions/components/MintCard.tsx
++++ b/src/champions/components/MintCard.tsx
+@@ -12,11 +12,7 @@ import {
+   useVouchers,
+ } from "@/champions/hooks/useLitdex";
+ import { useWallet } from "@/champions/hooks/useWallet";
+-import { PASS_CARD_IMAGES } from "@/champions/lib/images";
+-import litCoreIconRaw from "@/champions/assets/rarity-icons/LitCore.png.asset.json";
+-import litGodIconRaw from "@/champions/assets/rarity-icons/LitGod.png.asset.json";
+-import litShardIconRaw from "@/champions/assets/rarity-icons/LitShard.png.asset.json";
+-import { RARITY_ICON_URL } from "@/champions/lib/images";
++import { PASS_CARD_IMAGES, RARITY_ICONS } from "@/champions/lib/images";
+ import {
+   NFT_ADDRESS,
+   discountLabel,
+@@ -137,11 +133,6 @@ export function MintCard() {
+     RARE: "LitCore",
+     EPIC: "LitGod",
+   };
+-  const RARITY_ICONS: Record<string, string> = {
+-    COMMON: RARITY_ICON_URL(litShardIconRaw),
+-    RARE: RARITY_ICON_URL(litCoreIconRaw),
+-    EPIC: RARITY_ICON_URL(litGodIconRaw),
+-  };
+   const rarityLabel = (category: string) =>
+     RARITY_DISPLAY[category.toUpperCase()] ?? category;
+ 
+diff --git a/src/champions/components/NftSection.tsx b/src/champions/components/NftSection.tsx
+index 546136c..7ba1801 100644
+--- a/src/champions/components/NftSection.tsx
++++ b/src/champions/components/NftSection.tsx
+@@ -128,8 +128,8 @@ export function NftSection({ onManage }: { onManage?: () => void }) {
+         </div>
+       )}
+ 
+-      {isLoading && <LoadingBlock label="Loading your champions…" />}
+-      {!isFetching && isError && (
++      {isLoading && !isError && <LoadingBlock label="Loading your champions…" />}
++      {isError && (
+         <div className="rounded-[2rem] border-2 border-dashed border-red-200 bg-red-50 p-8 text-center">
+           <p className="btn-text text-red-700">
+             Couldn&apos;t load your champions.{" "}
+diff --git a/src/champions/hooks/useLitdex.ts b/src/champions/hooks/useLitdex.ts
+index ab3757d..16d28c9 100644
+--- a/src/champions/hooks/useLitdex.ts
++++ b/src/champions/hooks/useLitdex.ts
+@@ -166,6 +166,10 @@ export function useOwnedNfts() {
+   return useQuery({
+     queryKey: ["ownedNfts", address],
+     enabled: !!address,
++    // One retry only. The default (3 x 30s timeout) meant a failing request
++    // sat on "Loading your champions…" for two minutes before the UI ever
++    // admitted something was wrong.
++    retry: 1,
+     // Show the last known list instantly, then refresh in the background.
+     initialData: () => (address ? readOwnedCache(address) : undefined),
+     initialDataUpdatedAt: 0,
+@@ -177,7 +181,6 @@ export function useOwnedNfts() {
+       try {
+         const res = await fetch(url, { signal: controller.signal });
+         const json = (await res.json()) as ChampionsApiResponse;
+-        console.log("[useOwnedNfts] API response:", json);
+         if (!res.ok) {
+           const err = (json as { error?: string }).error;
+           throw new Error(err ?? `champions fetch failed (${res.status})`);
+diff --git a/src/champions/lib/images.ts b/src/champions/lib/images.ts
+index 4e54555..95715ad 100644
+--- a/src/champions/lib/images.ts
++++ b/src/champions/lib/images.ts
+@@ -1,20 +1,20 @@
+-import passCommon from "@/champions/assets/common.webp.asset.json";
+-import passRare from "@/champions/assets/rare.webp.asset.json";
+-import passEpic from "@/champions/assets/epic.webp.asset.json";
+-import passLegend from "@/champions/assets/legend.webp.asset.json";
+-
++/**
++ * All Champions artwork is served from stable public URLs — never from
++ * Lovable's *.asset.json pointers, which resolve to /__l5e/assets-v1/...
++ * paths that only exist inside Lovable's own preview infrastructure and
++ * 404 on any real deployment. That was why every pass card and rarity
++ * icon rendered as a broken image after the port.
++ *
++ * Two sources, both CDN-backed:
++ *   GH_BASE  — the boardpass folder in the assets repo (icons, hero art).
++ *   LOCAL    — files committed to this app's own /public folder, served
++ *              from the same edge as the site itself (pass cards).
++ */
+ const GH_BASE =
+   "https://raw.githubusercontent.com/0xDarkSeidBull/nft/main/files/boardpass";
+ 
+-/**
+- * These *.asset.json files are Lovable's asset pointers — importing them
+- * gives back { url: "/__l5e/assets-v1/...", ... }, a path relative to
+- * whatever domain serves it. On litdex's own domain that path 404s, so we
+- * resolve it against nft.test-hub.xyz (where these assets actually live)
+- * instead of the app's own origin.
+- */
+-const LOVABLE_ASSET_ORIGIN = "https://nft.test-hub.xyz";
+-const lovableAssetUrl = (asset: { url: string }) => `${LOVABLE_ASSET_ORIGIN}${asset.url}`;
++/** Pass cards live in this repo's /public so they can never 404 on a third party. */
++const LOCAL_PASS = "/champions/pass-cards";
+ 
+ export const HERO_EPIC_IMAGE = `${GH_BASE}/LITDEXEPIC%20HOME.png`;
+ export const HERO_LEGEND_IMAGE = `${GH_BASE}/LITDEXLEGENDHOME.png`;
+@@ -24,11 +24,20 @@ export const RARE_PFP = `${GH_BASE}/rpfp.png`;
+ export const EPIC_PFP = `${GH_BASE}/epfp.png`;
+ export const LEGEND_PFP = `${GH_BASE}/lpfp.png`;
+ 
++/** Voucher / rarity tier icons shown on the mint card. */
++export const LITSHARD_ICON = `${GH_BASE}/LitShard.png`;
++export const LITCORE_ICON = `${GH_BASE}/LitCore.png`;
++export const LITGOD_ICON = `${GH_BASE}/LitGod.png`;
++
++export const RARITY_ICONS: Record<string, string> = {
++  COMMON: LITSHARD_ICON,
++  RARE: LITCORE_ICON,
++  EPIC: LITGOD_ICON,
++};
++
+ export const PASS_CARD_IMAGES = [
+-  { src: lovableAssetUrl(passCommon), label: "Common" },
+-  { src: lovableAssetUrl(passRare), label: "Rare" },
+-  { src: lovableAssetUrl(passEpic), label: "Epic" },
+-  { src: lovableAssetUrl(passLegend), label: "Legend" },
++  { src: `${LOCAL_PASS}/common.webp`, label: "Common" },
++  { src: `${LOCAL_PASS}/rare.webp`, label: "Rare" },
++  { src: `${LOCAL_PASS}/epic.webp`, label: "Epic" },
++  { src: `${LOCAL_PASS}/legend.webp`, label: "Legend" },
+ ];
+-
+-export const RARITY_ICON_URL = lovableAssetUrl;
+diff --git a/src/index.css b/src/index.css
+index c0b59b7..cfe2cf8 100644
+--- a/src/index.css
++++ b/src/index.css
+@@ -414,8 +414,8 @@ body.hide-nav .litdex-mobile-hamburger { display: none !important; }
+ 
+ /* ---------- Champions NFT section (ported styles, scoped) ---------- */
+ .champions-root {
+-  background: #0038ff;
+-  color: #000;
++  background: transparent;
++  color: var(--color-brand-text-primary);
+ }
+ .champions-root .btn-text {
+   font-family: "JetBrains Mono", monospace;
+@@ -495,11 +495,91 @@ body.hide-nav .litdex-mobile-hamburger { display: none !important; }
+ .champions-root .btn[aria-disabled="true"] { cursor: not-allowed; opacity: 0.4; }
+ .champions-root .btn:disabled:hover,
+ .champions-root .btn[aria-disabled="true"]:hover { transform: none; box-shadow: none; }
+-.champions-root .btn-pill { border-radius: 9999px; }
+-.champions-root .btn-lime { --bink: #000000; --bsurf: #ccff00; background-color: #ccff00; }
+-.champions-root .btn-blue { --bink: #ffffff; --bsurf: #0038ff; background-color: #0038ff; }
+-.champions-root .btn-ghost { --bink: #ffffff; --bsurf: transparent; background-color: transparent; }
+-.champions-root .btn-white { --bink: #0038ff; --bsurf: #ffffff; background-color: #ffffff; }
++.champions-root .btn-pill { border-radius: 8px; }
++.champions-root .btn-lime {
++  --bink: var(--color-brand-control-foreground);
++  --bsurf: var(--color-brand-control);
++  background-color: var(--color-brand-control);
++  border-color: var(--color-brand-control);
++}
++.champions-root .btn-blue {
++  --bink: var(--color-brand-text-primary);
++  --bsurf: var(--color-brand-surface-2);
++  background-color: var(--color-brand-surface-2);
++  border-color: var(--color-brand-border);
++}
++.champions-root .btn-ghost {
++  --bink: var(--color-brand-text-primary);
++  --bsurf: transparent;
++  background-color: transparent;
++  border-color: var(--color-brand-border);
++}
++.champions-root .btn-white {
++  --bink: var(--color-brand-control-foreground);
++  --bsurf: var(--color-brand-text-primary);
++  background-color: var(--color-brand-text-primary);
++}
++
++/* --------------------------------------------------------------------
++ * Theme bridge.
++ *
++ * The Champions components were written for their own standalone site
++ * (blue #0038FF canvas, lime #CCFF00 accent, white cards, black text)
++ * with those colours hardcoded as Tailwind utilities across ~2000 lines.
++ * Rather than rewrite every component, the utilities are re-pointed at
++ * LitDEX's brand tokens here, scoped to .champions-root so nothing else
++ * on the site is touched. Because these are the same CSS variables the
++ * rest of LitDEX uses, this section also follows the light/dark toggle
++ * for free.
++ * ------------------------------------------------------------------ */
++.champions-root .heading-ul::after { background: var(--color-brand-control); }
++
++.champions-root .bg-white,
++.champions-root .bg-\[\#F4F4F2\] { background-color: var(--color-brand-surface) !important; }
++.champions-root .bg-black { background-color: var(--color-brand-bg) !important; }
++.champions-root .bg-\[\#0038FF\] { background-color: var(--color-brand-surface-2) !important; }
++.champions-root .bg-\[\#CCFF00\] { background-color: var(--color-brand-control) !important; }
++
++.champions-root .text-black,
++.champions-root .text-white { color: var(--color-brand-text-primary) !important; }
++.champions-root .text-black\/60,
++.champions-root .text-black\/50,
++.champions-root .text-black\/40 { color: var(--color-brand-text-muted) !important; }
++.champions-root .text-\[\#0038FF\],
++.champions-root .text-\[\#CCFF00\] { color: var(--color-brand-control) !important; }
++
++.champions-root .border-black\/20,
++.champions-root .border-black\/15,
++.champions-root .border-black\/10,
++.champions-root .border-black\/5,
++.champions-root .border-\[\#0038FF\] { border-color: var(--color-brand-border) !important; }
++
++/* MintCard uses a light gradient panel — flatten it onto the dark surface. */
++.champions-root .from-slate-50,
++.champions-root .via-white,
++.champions-root .to-indigo-50 { --tw-gradient-from: var(--color-brand-surface); --tw-gradient-via: var(--color-brand-surface); --tw-gradient-to: var(--color-brand-surface); }
++.champions-root .bg-gradient-to-br { background-image: none !important; background-color: var(--color-brand-surface) !important; }
++
++/* Form controls inside the section (rarity / status / sort selects). */
++.champions-root select {
++  background-color: var(--color-brand-surface-2) !important;
++  border-color: var(--color-brand-border) !important;
++  color: var(--color-brand-text-primary) !important;
++}
++.champions-root select option {
++  background-color: var(--color-brand-surface-2);
++  color: var(--color-brand-text-primary);
++}
++
++.champions-panel {
++  border: 1px solid var(--color-brand-border);
++  background: var(--color-brand-bg);
++}
++.champions-root .champions-empty {
++  border-color: var(--color-brand-border);
++  background: var(--color-brand-surface);
++  color: var(--color-brand-text-primary);
++}
+ 
+ /* NFT video showcase */
+ .nft-showcase-page {
