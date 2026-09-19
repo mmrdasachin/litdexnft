@@ -240,32 +240,35 @@ export function useOwnedNfts() {
           };
         });
 
-        // Anything the API did not report clearly is read straight from chain,
-        // so the card never falls back to "Unknown".
+        // The API only tells us WHICH tokens the wallet owns. Rarity, level and
+        // damage are always read from chain: the API was caught returning an
+        // old level after a level up while the artwork (built from chain) was
+        // already on the new tier. If a chain read fails we fall back to the
+        // API's numbers for that token.
         const contract = nftRead();
-        const result: OwnedNft[] = await Promise.all(
-          parsed.map(async (item) => {
-            if (item.rarity !== null && item.level !== null) {
-              return { ...item, rarity: item.rarity, level: item.level } as OwnedNft;
-            }
-            try {
-              const s = await contract.tokenState(item.tokenId);
-              return {
-                tokenId: item.tokenId,
-                rarity: Number(s[0]),
-                level: Number(s[1]),
-                damaged: Boolean(s[2]),
-                gamesAtMaxLevel: Number(s[3]),
-              };
-            } catch {
-              return {
-                ...item,
-                rarity: item.rarity ?? 0,
-                level: item.level ?? 1,
-              } as OwnedNft;
-            }
-          }),
-        );
+        const readOne = async (item: (typeof parsed)[number]): Promise<OwnedNft> => {
+          try {
+            const s = await contract.tokenState(item.tokenId);
+            return {
+              tokenId: item.tokenId,
+              rarity: Number(s[0]),
+              level: Number(s[1]),
+              damaged: Boolean(s[2]),
+              gamesAtMaxLevel: Number(s[3]),
+            };
+          } catch {
+            return {
+              ...item,
+              rarity: item.rarity ?? 0,
+              level: item.level ?? 1,
+            } as OwnedNft;
+          }
+        };
+        const result: OwnedNft[] = [];
+        for (let i = 0; i < parsed.length; i += 10) {
+          result.push(...(await Promise.all(parsed.slice(i, i + 10).map(readOne))));
+        }
+
         const now = Date.now();
         const merged = result.map((n) => {
           const id = n.tokenId.toString();
