@@ -1,12 +1,14 @@
 import { ethers } from "ethers";
 import { ExternalLink } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { toast } from "sonner";
 import { LoadingImage } from "@/champions/components/LoadingImage";
 
 import { Spinner } from "@/champions/components/ui/reui-spinner";
 import { COMMON_PFP, EPIC_PFP, LEGEND_PFP, PASS_CARD_IMAGES, RARE_PFP } from "@/champions/lib/images";
 import {
+  applyFreshTokenState,
+  settleBasePoints,
   usdtRead,
   useBasePoints,
   useGameConfig,
@@ -17,6 +19,7 @@ import {
 } from "@/champions/hooks/useLitdex";
 
 import { useWallet } from "@/champions/hooks/useWallet";
+import { showErrorCard, showSuccess, type SuccessRow } from "@/lib/feedback";
 import {
   MAX_LEVEL,
   NFT_ADDRESS,
@@ -76,6 +79,7 @@ function PillButton({
 export function NftCard({ nft, compact = false }: { nft: OwnedNft; compact?: boolean }) {
   const { address, getSigner, correctNetwork } = useWallet();
   const refreshAll = useRefreshAll();
+  const qc = useQueryClient();
   const { data: points } = useBasePoints();
   const { data: config } = useGameConfig();
   const { data: levelCost } = useLevelCost(nft.level);
@@ -92,17 +96,12 @@ export function NftCard({ nft, compact = false }: { nft: OwnedNft; compact?: boo
 
   /** Generate + cache the new artwork server-side before the card reveals it. */
   async function prewarm(expected: { rarity: number; level: number }) {
-    setUpdating(true);
-    try {
-      await prewarmMetadata(nft.tokenId, expected.rarity, expected.level);
-    } finally {
-      setUpdating(false);
-    }
+    await prewarmMetadata(nft.tokenId, expected.rarity, expected.level);
   }
 
   async function run(
     label: string,
-    fn: (signer: ethers.Signer) => Promise<void>,
+    fn: (signer: ethers.Signer) => Promise<string | void>,
     fallback: string,
     expected?: { rarity: number; level: number },
   ) {
@@ -116,14 +115,36 @@ export function NftCard({ nft, compact = false }: { nft: OwnedNft; compact?: boo
     };
     try {
       const signer = await getSigner();
-      await fn(signer);
-      if (expected) await prewarm(expected);
-      await waitForTokenStateChange(nft.tokenId, before);
+      const txHash = await fn(signer);
+
+      // Artwork generation and the on-chain read run together. The card shows
+      // "Updating…" until both are done, then the new tier appears at once.
+      if (expected) setUpdating(true);
+      const [, fresh] = await Promise.all([
+        expected ? prewarm(expected).catch(() => undefined) : Promise.resolve(),
+        waitForTokenStateChange(nft.tokenId, before),
+      ]);
+      if (fresh && address) applyFreshTokenState(qc, address, nft.tokenId, fresh);
       await refreshAll();
-      toast.success(`${label} complete`);
+      settleBasePoints(qc);
+
+      const rows: SuccessRow[] = [{ label: "Champion", value: `#${nft.tokenId.toString().padStart(4, "0")}` }];
+      if (fresh) {
+        rows.push({ label: "Rarity", value: RARITY_NAMES[fresh.rarity] ?? "Unknown" });
+        rows.push({ label: "Tier", value: formatTierLabel(fresh) });
+      }
+      if (typeof txHash === "string") {
+        rows.push({
+          label: "Transaction",
+          value: `${txHash.slice(0, 6)}…${txHash.slice(-4)}`,
+          href: `https://basescan.org/tx/${txHash}`,
+        });
+      }
+      showSuccess({ title: `${label} complete`, subtitle: "Base Mainnet", rows });
     } catch (err) {
-      toast.error(parseWalletError(err, fallback));
+      showErrorCard(parseWalletError(err, fallback));
     } finally {
+      setUpdating(false);
       setBusy(null);
     }
   }
@@ -136,7 +157,8 @@ export function NftCard({ nft, compact = false }: { nft: OwnedNft; compact?: boo
       "Level up",
       async (signer) => {
         const tx = await nftWith(signer).levelUp(nft.tokenId);
-        await tx.wait();
+        const receipt = await tx.wait();
+        return receipt?.hash ?? tx.hash;
       },
       "Level up failed, try again.",
       { rarity: nft.rarity, level: nft.level + 1 },
@@ -147,7 +169,8 @@ export function NftCard({ nft, compact = false }: { nft: OwnedNft; compact?: boo
       "Promote",
       async (signer) => {
         const tx = await nftWith(signer).promote(nft.tokenId);
-        await tx.wait();
+        const receipt = await tx.wait();
+        return receipt?.hash ?? tx.hash;
       },
       "Promote failed, try again.",
       { rarity: Math.min(nft.rarity + 1, 3), level: 1 },
@@ -165,7 +188,8 @@ export function NftCard({ nft, compact = false }: { nft: OwnedNft; compact?: boo
           await approveTx.wait();
         }
         const tx = await nftWith(signer).repair(nft.tokenId);
-        await tx.wait();
+        const receipt = await tx.wait();
+        return receipt?.hash ?? tx.hash;
       },
       "Repair failed, try again.",
     );

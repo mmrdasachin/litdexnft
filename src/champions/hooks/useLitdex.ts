@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { ethers } from "ethers";
 import { useCallback } from "react";
 import { useWallet } from "./useWallet";
@@ -114,6 +114,38 @@ export function useGameConfig() {
 }
 
 const OWNED_CACHE_PREFIX = "litdex:owned:";
+
+export type TokenState = { rarity: number; level: number; damaged: boolean; gamesAtMaxLevel: number };
+
+/**
+ * State we read straight from chain right after a level up / promote / repair.
+ * The /champions API can lag behind the chain (cached or a slower node), and
+ * used to overwrite the card with the old tier. While an entry here is newer
+ * than what the API reports, the on-chain state wins. It is dropped as soon as
+ * the API catches up, or after FRESH_TTL_MS.
+ */
+const FRESH_TTL_MS = 5 * 60 * 1000;
+const freshTokenState = new Map<string, { state: TokenState; ts: number }>();
+
+const sameState = (a: TokenState, b: TokenState) =>
+  a.rarity === b.rarity && a.level === b.level && a.damaged === b.damaged && a.gamesAtMaxLevel === b.gamesAtMaxLevel;
+
+export function applyFreshTokenState(qc: QueryClient, address: string, tokenId: bigint, state: TokenState) {
+  freshTokenState.set(tokenId.toString(), { state, ts: Date.now() });
+  const key = ["ownedNfts", address];
+  const old = qc.getQueryData<OwnedNft[]>(key);
+  if (!old) return;
+  const next = old.map((n) => (n.tokenId === tokenId ? { ...n, ...state } : n));
+  qc.setQueryData(key, next);
+  writeOwnedCache(address, next);
+}
+
+/** Base RPC nodes can trail a block or two; re-read the points balance a bit later too. */
+export function settleBasePoints(qc: QueryClient) {
+  for (const ms of [2500, 6000]) {
+    setTimeout(() => void qc.invalidateQueries({ queryKey: ["basePoints"] }), ms);
+  }
+}
 
 type CachedNft = Omit<OwnedNft, "tokenId"> & { tokenId: string };
 
@@ -234,8 +266,19 @@ export function useOwnedNfts() {
             }
           }),
         );
-        writeOwnedCache(address, result);
-        return result;
+        const now = Date.now();
+        const merged = result.map((n) => {
+          const id = n.tokenId.toString();
+          const fresh = freshTokenState.get(id);
+          if (!fresh) return n;
+          if (sameState(fresh.state, n) || now - fresh.ts > FRESH_TTL_MS) {
+            freshTokenState.delete(id);
+            return n;
+          }
+          return { ...n, ...fresh.state };
+        });
+        writeOwnedCache(address, merged);
+        return merged;
       } finally {
         clearTimeout(timeout);
       }
@@ -322,7 +365,7 @@ export async function waitForTokenStateChange(
   tokenId: bigint,
   previous: { rarity: number; level: number; damaged: boolean; gamesAtMaxLevel: number },
   attempts = 10,
-) {
+): Promise<TokenState | null> {
   const c = nftRead();
   for (let i = 0; i < attempts; i++) {
     try {
@@ -332,11 +375,19 @@ export async function waitForTokenStateChange(
         Number(s[1]) !== previous.level ||
         Boolean(s[2]) !== previous.damaged ||
         Number(s[3]) !== previous.gamesAtMaxLevel;
-      if (changed) return;
+      if (changed) {
+        return {
+          rarity: Number(s[0]),
+          level: Number(s[1]),
+          damaged: Boolean(s[2]),
+          gamesAtMaxLevel: Number(s[3]),
+        };
+      }
     } catch {
       /* retry */
     }
     await new Promise((r) => setTimeout(r, 1200));
   }
+  return null;
 }
 

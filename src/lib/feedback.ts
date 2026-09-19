@@ -5,10 +5,25 @@ export type SuccessPayload = {
   title: string;
   subtitle?: string;
   rows: SuccessRow[];
+  /** "error" swaps the trophy for an alert icon. Defaults to "success". */
+  variant?: "success" | "error";
+  /** Plain-text body, for cards that have no key/value rows (errors). */
+  message?: string;
 };
 
 export function showSuccess(payload: SuccessPayload) {
   try {
+    window.dispatchEvent(new CustomEvent("litdex:success", { detail: payload }));
+  } catch { /* ignore */ }
+}
+
+/**
+ * Same themed popup a swap success uses, but for failures. The Champions
+ * section uses this instead of the sonner toast at the top of the screen.
+ */
+export function showErrorCard(message: string, title = "Action failed") {
+  try {
+    const payload: SuccessPayload = { title, message, rows: [], variant: "error" };
     window.dispatchEvent(new CustomEvent("litdex:success", { detail: payload }));
   } catch { /* ignore */ }
 }

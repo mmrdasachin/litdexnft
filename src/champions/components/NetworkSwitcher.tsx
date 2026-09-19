@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { toast } from "sonner";
+import { showErrorCard } from "@/lib/feedback";
 import { useWallet } from "@/champions/hooks/useWallet";
 import { BASE_MAINNET, chainName, parseWalletError } from "@/champions/lib/litdex";
 
@@ -19,7 +19,7 @@ export function NetworkSwitcher({ tone = "light" }: { tone?: "light" | "dark" })
     try {
       await switchNetwork();
     } catch (err) {
-      toast.error(parseWalletError(err, `Could not switch to ${BASE_MAINNET.chainName}.`));
+      showErrorCard(parseWalletError(err, `Could not switch to ${BASE_MAINNET.chainName}.`));
     } finally {
       setPending(false);
     }

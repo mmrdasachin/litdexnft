@@ -1,6 +1,6 @@
 import { Check, ChevronDown, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
+import { showErrorCard, showSuccess } from "@/lib/feedback";
 import { useRefreshAll, waitForTokenStateChange } from "@/champions/hooks/useLitdex";
 import { useWallet } from "@/champions/hooks/useWallet";
 import {
@@ -80,7 +80,7 @@ export function PredictGame({
       setGuess("");
       setPhase("playing");
     } catch (err) {
-      toast.error((err as Error).message || "Could not start the game.");
+      showErrorCard((err as Error).message || "Could not start the game.");
     } finally {
       setBusy(false);
     }
@@ -90,7 +90,7 @@ export function PredictGame({
     if (!session) return;
     const value = Number(guess);
     if (!Number.isInteger(value) || value < 1 || value > 10) {
-      toast.error("Pick a whole number between 1 and 10.");
+      showErrorCard("Pick a whole number between 1 and 10.");
       return;
     }
     setBusy(true);
@@ -126,7 +126,7 @@ export function PredictGame({
       setSeconds(COOLDOWN_SECONDS);
       setPhase("cooldown");
     } catch (err) {
-      toast.error((err as Error).message || "Guess failed.");
+      showErrorCard((err as Error).message || "Guess failed.");
     } finally {
       setBusy(false);
     }
@@ -152,9 +152,9 @@ export function PredictGame({
       await onPrewarm?.(expectedStateAfterGame(nft, complete.won));
       await waitForTokenStateChange(nft.tokenId, before);
       await refreshAll();
-      toast.success(complete.won ? "Tier up confirmed" : "Result recorded on-chain");
+      showSuccess({ title: complete.won ? "Tier up confirmed" : "Result recorded on-chain", subtitle: "Base Mainnet", rows: [] });
     } catch (err) {
-      toast.error(parseWalletError(err, "Could not record the result on-chain."));
+      showErrorCard(parseWalletError(err, "Could not record the result on-chain."));
     } finally {
       pending.current = null;
     }

@@ -12,7 +12,7 @@ import {
 } from "@/champions/hooks/useLitdex";
 import { useWallet } from "@/champions/hooks/useWallet";
 import { PASS_CARD_IMAGES, RARITY_ICONS } from "@/champions/lib/images";
-import { showError, showSuccess } from "@/lib/feedback";
+import { showErrorCard, showSuccess } from "@/lib/feedback";
 import {
   NFT_ADDRESS,
   discountLabel,
@@ -299,7 +299,7 @@ export function MintCard() {
         receipt?.hash,
       );
     } catch (err) {
-      showError(parseWalletError(err, "Mint failed, try again."));
+      showErrorCard(parseWalletError(err, "Mint failed, try again."));
     } finally {
       setStatus(null);
     }
@@ -340,7 +340,7 @@ export function MintCard() {
         receipt?.hash,
       );
     } catch (err) {
-      showError(parseWalletError(err, "Voucher mint failed, try again."));
+      showErrorCard(parseWalletError(err, "Voucher mint failed, try again."));
     } finally {
       setStatus(null);
     }

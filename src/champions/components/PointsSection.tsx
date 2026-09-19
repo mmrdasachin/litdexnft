@@ -1,12 +1,26 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { useRefreshAll } from "@/champions/hooks/useLitdex";
+import { settleBasePoints, useRefreshAll } from "@/champions/hooks/useLitdex";
 import { useWallet } from "@/champions/hooks/useWallet";
 import { API_BASE, formatPoints, parseWalletError, pointsContract } from "@/champions/lib/litdex";
-import { readLDPoints } from "@/lib/litdex-core-logic";
-import { showError, showSuccess } from "@/lib/feedback";
+import { showErrorCard, showSuccess } from "@/lib/feedback";
 
-type ClaimStep = "idle" | "burning" | "signing" | "confirming";
+type ClaimStep = "idle" | "requesting" | "signing" | "confirming";
+
+type LdAvailable = { available: bigint; pendingBurn: bigint; syncing: boolean };
+
+async function fetchLdAvailable(address: string): Promise<LdAvailable> {
+  const res = await fetch(`${API_BASE}/points/available/${address}`);
+  const j = (await res.json().catch(() => null)) as
+    | { available?: string; pendingBurn?: string; syncing?: boolean }
+    | null;
+  if (!res.ok || !j || j.available === undefined) throw new Error("available fetch failed");
+  return {
+    available: BigInt(j.available),
+    pendingBurn: BigInt(j.pendingBurn ?? "0"),
+    syncing: !!j.syncing,
+  };
+}
 
 /**
  * Claiming happens inline — an amount field sits next to a compact Claim
@@ -17,24 +31,57 @@ type ClaimStep = "idle" | "burning" | "signing" | "confirming";
 export function PointsSection() {
   const { address, getSigner, correctNetwork } = useWallet();
   const refreshAll = useRefreshAll();
+  const qc = useQueryClient();
   const [amount, setAmount] = useState("");
   const [step, setStep] = useState<ClaimStep>("idle");
 
   /**
-   * Balance is read straight from the LD Points contract on LitVM — the same
-   * source the main site's Points dashboard uses — rather than the backend's
-   * old V7 balance endpoint. V7 earning is switched off and every V7 holder
-   * was already credited at 10:1, so LD is the only balance that matters.
+   * LD is burned by the backend only after the Base claim confirms, so the raw
+   * on-chain LD balance lags behind by a few seconds. The backend's
+   * /points/available subtracts whatever has already landed on Base but is not
+   * burned yet, so the number here drops the moment the claim confirms and a
+   * second claim can never spend the same points twice.
    */
   const litvm = useQuery({
-    queryKey: ["ldPointsBalance", address],
+    queryKey: ["ldAvailable", address],
     enabled: !!address,
-    refetchInterval: 20000,
-    queryFn: async () => readLDPoints(address!),
+    refetchInterval: (q) => (q.state.data?.syncing ? 3000 : 20000),
+    queryFn: () => fetchLdAvailable(address!),
   });
 
-  const available = litvm.data ? litvm.data.total : null;
+  const available = litvm.data ? litvm.data.available : null;
+  const burnPending = !!litvm.data && (litvm.data.syncing || litvm.data.pendingBurn > 0n);
   const busy = step !== "idle";
+
+  /**
+   * Base confirmed -> ask the backend to burn now instead of waiting for its
+   * 20s loop, then poll until the balance reflects it. Both calls are
+   * idempotent on the backend, so the second confirm is just a safety net for
+   * a node that had not seen the block yet.
+   */
+  async function syncAfterClaim(claimed: bigint, before: bigint | null) {
+    if (!address) return;
+    const confirm = () =>
+      fetch(`${API_BASE}/points/confirm`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address }),
+      }).catch(() => undefined);
+    void confirm();
+    setTimeout(() => void confirm(), 5000);
+
+    for (let i = 0; i < 12; i++) {
+      try {
+        const cur = await fetchLdAvailable(address);
+        qc.setQueryData(["ldAvailable", address], cur);
+        if (before === null || cur.available <= before - claimed) break;
+      } catch {
+        /* backend busy, next attempt */
+      }
+      await new Promise((r) => setTimeout(r, 2500));
+    }
+    void qc.invalidateQueries({ queryKey: ["ldAvailable", address] });
+  }
 
   let amountValid = false;
   try {
@@ -49,7 +96,8 @@ export function PointsSection() {
 
   async function handleClaim() {
     if (!address || !amountValid) return;
-    setStep("burning");
+    const before = available;
+    setStep("requesting");
     try {
       const res = await fetch(`${API_BASE}/points/claim`, {
         method: "POST",
@@ -60,7 +108,7 @@ export function PointsSection() {
         | { totalEarned: string; expiry: string; signature: string; error?: string; message?: string }
         | null;
       if (!res.ok || !body) {
-        showError(body?.error || body?.message || "Claim request failed. Try again.");
+        showErrorCard(body?.error || body?.message || "Claim request failed. Try again.");
         setStep("idle");
         return;
       }
@@ -70,10 +118,12 @@ export function PointsSection() {
       const tx = await pointsContract(signer).claim(body.totalEarned, body.expiry, body.signature);
       setStep("confirming");
       const receipt = await tx.wait();
-      await refreshAll();
 
       const claimed = amount.trim();
       setAmount("");
+      void syncAfterClaim(BigInt(claimed), before);
+      await refreshAll();
+      settleBasePoints(qc);
       showSuccess({
         title: "Points claimed",
         subtitle: "LitVM → Base Mainnet",
@@ -90,15 +140,15 @@ export function PointsSection() {
         ],
       });
     } catch (err) {
-      showError(parseWalletError(err, "Claim failed, try again."));
+      showErrorCard(parseWalletError(err, "Claim failed, try again."));
     } finally {
       setStep("idle");
     }
   }
 
   const buttonLabel =
-    step === "burning"
-      ? "Burning…"
+    step === "requesting"
+      ? "Preparing…"
       : step === "signing"
         ? "Confirm…"
         : step === "confirming"
@@ -111,7 +161,7 @@ export function PointsSection() {
         Claim your points
       </h3>
       <p className="btn-text mt-2 text-center text-black/50">
-        LD points earned on LitVM convert to Base.
+        LD points earned on LitVM convert to Base. LD is burned only after Base confirms.
       </p>
 
       <div className="mt-auto flex flex-col items-center gap-3 pt-8">
@@ -121,10 +171,13 @@ export function PointsSection() {
               ? "…"
               : litvm.isError
                 ? "—"
-                : formatPoints(litvm.data?.total ?? 0n)}{" "}
+                : formatPoints(litvm.data?.available ?? 0n)}{" "}
             <span className="text-white/70">LD available</span>
           </p>
         </div>
+        {burnPending && (
+          <p className="btn-text text-center text-black/50">Syncing burn…</p>
+        )}
 
         <div className="flex w-full items-stretch gap-2">
           <div className="relative flex-1">

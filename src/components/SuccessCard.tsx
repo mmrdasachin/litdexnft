@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trophy, X } from "lucide-react";
+import { AlertCircle, Trophy, X } from "lucide-react";
 import type { SuccessPayload } from "@/lib/feedback";
 
 export default function SuccessCard() {
@@ -14,9 +14,11 @@ export default function SuccessCard() {
     return () => window.removeEventListener("litdex:success", onSuccess);
   }, []);
 
+  const isError = data?.variant === "error";
+
   useEffect(() => {
     if (!data) return;
-    const t = setTimeout(() => setData(null), 5000);
+    const t = setTimeout(() => setData(null), data.variant === "error" ? 6000 : 5000);
     return () => clearTimeout(t);
   }, [data]);
 
@@ -36,6 +38,7 @@ export default function SuccessCard() {
             exit={{ scale: 0.95, y: 8 }}
             transition={{ type: "spring", damping: 22, stiffness: 280 }}
             onClick={(e) => e.stopPropagation()}
+            role={isError ? "alert" : "status"}
             className="relative bg-brand-surface border border-brand-border rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] w-full min-w-[320px] max-w-[420px] p-6 success-alert-card"
           >
             <button
@@ -47,8 +50,16 @@ export default function SuccessCard() {
             </button>
 
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-11 h-11 rounded-full bg-white/5 flex items-center justify-center shrink-0 border border-white/10">
-                <Trophy size={20} className="text-white" />
+              <div
+                className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 border ${
+                  isError ? "bg-[#FF4D4D]/10 border-[#FF4D4D]/30" : "bg-white/5 border-white/10"
+                }`}
+              >
+                {isError ? (
+                  <AlertCircle size={20} className="text-[#FF6B6B]" />
+                ) : (
+                  <Trophy size={20} className="text-white" />
+                )}
               </div>
               <div className="min-w-0">
                 <div className="font-black uppercase tracking-tight text-base text-brand-text-primary truncate">
@@ -62,6 +73,13 @@ export default function SuccessCard() {
               </div>
             </div>
 
+            {data.message && (
+              <p className="border-t border-brand-border pt-4 text-xs font-mono font-bold text-brand-text-primary break-words">
+                {data.message}
+              </p>
+            )}
+
+            {data.rows.length > 0 && (
             <div className="border-t border-brand-border pt-4 space-y-3">
               {data.rows.map((row, i) => (
                 <div key={i} className="flex justify-between items-center gap-4 text-xs font-mono">
@@ -85,6 +103,7 @@ export default function SuccessCard() {
                 </div>
               ))}
             </div>
+            )}
           </motion.div>
         </motion.div>
       )}
